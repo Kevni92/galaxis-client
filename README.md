@@ -44,7 +44,8 @@ pnpm install
 | Formatierung prüfen / schreiben            | `pnpm format:check` / `pnpm format` |
 | Unit-/Komponententests                     | `pnpm test:unit`                    |
 | Playwright-Browser installieren (einmalig) | `pnpm test:e2e:install`             |
-| End-to-End-Smoke (Playwright)              | `pnpm test:e2e`                     |
+| End-to-End-Smoke (gemockte API)            | `pnpm test:e2e`                     |
+| A0-End-to-End-Smoke (echter Server)        | `pnpm test:e2e:a0`                  |
 
 ## Konfiguration
 
@@ -68,14 +69,27 @@ src/
   app/               Shell, Routing, Fehlergrenze, Zustand
   shared/config/     konfigurierbare API-Basis-URL
   views/             Routenansichten
-e2e/                 Playwright-Smoke-Tests
+e2e/                 Playwright-Smoke-Tests (gemockte API)
+e2e-a0/              A0-End-to-End-Smoke gegen echten Server
+scripts/             Testorchestrierung (z. B. run-e2e-a0.mjs)
 ```
 
 ## Tests
 
 Die Teststrategie folgt [`docs/TESTING.md`](docs/TESTING.md): schnelle Unit-/
 Komponententests bei jeder Änderung, eine kleine kritische Playwright-Smoke-Suite
-(nur Chromium, Desktop). `pnpm test:e2e` baut den Client und öffnet die App-Shell.
+(nur Chromium, Desktop). `pnpm test:e2e` baut den Client, mockt die Auth-Endpunkte
+und öffnet die App-Shell; er läuft bei jedem Pull Request in [CI](.github/workflows/ci.yml).
+
+`pnpm test:e2e:a0` führt zusätzlich den vollständigen A0-Ablauf (Registrierung,
+Anmeldung, Sessionprüfung, Abmeldung) gegen einen echten Server samt PostgreSQL
+aus – gemäß `docs/TESTING.md` ("Nach Merge auf main") nicht bei jedem PR, sondern
+nach dem Merge und manuell per `workflow_dispatch`. Voraussetzung ist ein
+Nebeneinander-Checkout von [`galaxis-server`](https://github.com/Kevni92/galaxis-server)
+unter `../server` (überschreibbar über `GALAXIS_SERVER_DIR`) sowie ein laufender
+Docker-Daemon; das Skript [`scripts/run-e2e-a0.mjs`](scripts/run-e2e-a0.mjs) startet
+PostgreSQL und den Server, wartet auf dessen Bereitschaft und führt
+[`playwright.a0.config.ts`](playwright.a0.config.ts) aus.
 
 ## Abgrenzung (A0)
 
