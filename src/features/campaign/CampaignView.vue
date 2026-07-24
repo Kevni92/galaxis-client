@@ -4,12 +4,14 @@
 //
 // Kampagnen-App-Shell: lädt nach Auswahl den kompakten Kampagnenzustand und stellt die Navigation
 // zu Reich, System und Kolonie über die serverseitigen Linkrelationen bereit. Die bekannte
-// 3D-Heimatsystemansicht (Issue #9) ist als permanente Arbeitsfläche eingebettet; das modale
-// Kolonie-/Planetdetail (Issue #10) folgt.
-import { defineAsyncComponent, onMounted, watch } from 'vue'
+// 3D-Heimatsystemansicht (Issue #9) ist als permanente Arbeitsfläche eingebettet; die Shell öffnet
+// beim Auswählen eines Planeten das modale Kolonie-/Planetdetail (Issue #10) über der Szene.
+import { computed, defineAsyncComponent, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ErrorNotice } from '@/shared/ui'
+import { useHomeSystemStore } from '@/features/galaxy'
+import { ColonyDetailWindow, useColonyStore } from '@/features/colony'
 import { useCampaignStateStore } from './campaignStateStore'
 
 // Lazy-Import hält Three.js aus dem Startbundle; die Systemansicht lädt erst mit der Kampagne.
@@ -18,6 +20,15 @@ const HomeSystemView = defineAsyncComponent(() => import('@/features/galaxy/Home
 const route = useRoute()
 const store = useCampaignStateStore()
 const { state, status, error, stateVersion, controlledEmpire, links } = storeToRefs(store)
+
+const homeSystem = useHomeSystemStore()
+const colony = useColonyStore()
+const { selectedObject } = storeToRefs(homeSystem)
+
+/** Das modale Detailfenster öffnet, solange ein Planet gewählt ist; die Szene bleibt im Hintergrund. */
+const selectedPlanet = computed(() =>
+  selectedObject.value?.kind === 'planet' ? selectedObject.value : null,
+)
 
 function currentCampaignId(): string {
   return route.params.campaignId as string
@@ -34,6 +45,25 @@ watch(
     if (typeof id === 'string') void store.loadState(id)
   },
 )
+
+// Kolonieübersicht laden, sobald der Kampagnenzustand samt Linkrelation bereitsteht.
+watch(
+  status,
+  (value) => {
+    if (value === 'ready' && links.value.colonies) void colony.loadColonies(links.value.colonies)
+  },
+  { immediate: true },
+)
+
+// Planetenauswahl der Systemansicht in den Kolonie-Store spiegeln (Maus, Picking, Liste und URL).
+watch(
+  () => selectedPlanet.value?.id ?? null,
+  (planetId) => void colony.selectPlanet(planetId),
+)
+
+function closeDetail(): void {
+  homeSystem.select(null)
+}
 </script>
 
 <template>
@@ -85,6 +115,13 @@ watch(
         data-testid="campaign-home-system"
       />
 
+      <ColonyDetailWindow
+        v-if="selectedPlanet"
+        :planet="selectedPlanet"
+        data-testid="campaign-colony-detail"
+        @close="closeDetail"
+      />
+
       <nav class="campaign__nav" aria-label="Kampagnennavigation" data-testid="campaign-nav">
         <h2>Reich</h2>
         <ul>
@@ -93,7 +130,8 @@ watch(
           <li v-if="links.economy" data-testid="nav-economy">Grundversorgung</li>
         </ul>
         <p class="campaign__hint">
-          Die modalen Kolonie- und Planetdetails folgen im nächsten A1-Schritt.
+          Wähle den Heimatplaneten in der Systemansicht, um das modale Kolonie- und Planetdetail zu
+          öffnen.
         </p>
       </nav>
     </template>

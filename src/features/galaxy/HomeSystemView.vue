@@ -154,9 +154,6 @@ onBeforeUnmount(() => {
               </dd>
             </div>
           </dl>
-          <p v-if="selectedObject.kind === 'planet'" class="home-system__hint">
-            Das modale Planet- und Koloniedetail folgt im nächsten A1-Schritt.
-          </p>
         </div>
       </aside>
     </div>
@@ -239,10 +236,5 @@ onBeforeUnmount(() => {
 .home-system__selection dd {
   margin: 0;
   font-weight: 600;
-}
-
-.home-system__hint {
-  opacity: 0.85;
-  font-size: 0.85rem;
 }
 </style>

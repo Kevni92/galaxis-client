@@ -35,7 +35,8 @@ Auswahl ist Clientzustand und bleibt über die URL nachvollziehbar.
 
 - Sichtbare Namen stammen aktuell direkt aus den Server-`displayNameKey`s. Die Auflösung über eine
   YAML-Lokalisierungsschicht (Decision 0007) folgt als eigener Schritt.
-- Das modale Planet-/Koloniedetail beim Auswählen folgt in Issue #10.
+- Das modale Planet-/Koloniedetail beim Auswählen liefert `features/colony` (Issue #10); die Shell
+  spiegelt die Planetenauswahl dorthin.
 
 ## Abhängigkeiten
 

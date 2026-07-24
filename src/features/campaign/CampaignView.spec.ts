@@ -7,6 +7,103 @@ import CampaignView from './CampaignView.vue'
 import { useCampaignStateStore } from './campaignStateStore'
 import { ApiError } from '@/shared/api'
 import type { CampaignApi, CampaignStateResponse } from './campaignApi'
+import { useHomeSystemStore } from '@/features/galaxy'
+import type { GalaxyApi, GalaxyOverviewResponse, SystemDetailResponse } from '@/features/galaxy'
+import { useColonyStore } from '@/features/colony'
+import type { ColonyApi, ColonyOverviewResponse } from '@/features/colony'
+
+const SYSTEM_LINK = '/api/v1/campaigns/cmp_1/systems/sys_home'
+
+function galaxy(): GalaxyOverviewResponse {
+  return {
+    campaignId: 'cmp_1',
+    stateVersion: 1,
+    generatedAt: '2026-07-23T12:00:00Z',
+    startSystemId: 'sys_home',
+    knownSystems: [
+      {
+        systemId: 'sys_home',
+        regionId: 'reg_core',
+        knowledgeLevel: 'explored',
+        displayNameKey: 'system.home.name',
+        galaxyPosition: { x: 0, y: 0, z: 0 },
+        renderKind: 'yellow_star_system',
+        starCount: 1,
+        planetCount: 1,
+        links: { self: SYSTEM_LINK },
+      },
+    ],
+    knownConnections: [],
+  }
+}
+
+function system(): SystemDetailResponse {
+  return {
+    campaignId: 'cmp_1',
+    stateVersion: 1,
+    generatedAt: '2026-07-23T12:00:00Z',
+    systemId: 'sys_home',
+    regionId: 'reg_core',
+    knowledgeLevel: 'explored',
+    displayNameKey: 'system.home.name',
+    stars: [],
+    planets: [
+      {
+        planetId: 'pln_home',
+        objectType: 'planet',
+        systemId: 'sys_home',
+        knowledgeLevel: 'explored',
+        displayNameKey: 'planet.home.name',
+        localPosition: { x: 120.5, y: -44 },
+        renderKind: 'terrestrial_planet',
+        category: 'terrestrial',
+        size: 'medium',
+        homeworldEligible: true,
+        links: { self: SYSTEM_LINK },
+      },
+    ],
+    links: { self: SYSTEM_LINK },
+  }
+}
+
+function galaxyApi(): GalaxyApi {
+  return { getGalaxy: vi.fn(async () => galaxy()), getSystem: vi.fn(async () => system()) }
+}
+
+function colonyOverview(): ColonyOverviewResponse {
+  return {
+    campaignId: 'cmp_1',
+    empireId: 'emp_1',
+    stateVersion: 1,
+    generatedAt: '2026-07-23T12:00:00Z',
+    colonies: [
+      {
+        colonyId: 'col_home',
+        systemId: 'sys_home',
+        planetId: 'pln_home',
+        isHomeColony: true,
+        lifecycleState: 'etabliert',
+        specialization: 'neutral',
+        planet: {
+          category: 'terrestrial',
+          size: 'medium',
+          knowledgeLevel: 'explored',
+          displayNameKey: 'planet.home.name',
+          renderKind: 'terrestrial_planet',
+        },
+        links: { system: SYSTEM_LINK, population: '/api/v1/pop', economy: '/api/v1/eco' },
+      },
+    ],
+  }
+}
+
+function colonyApi(): ColonyApi {
+  return {
+    getColonies: vi.fn(async () => colonyOverview()),
+    getPopulation: vi.fn(async () => Promise.reject(new Error('nicht benötigt'))),
+    getEconomy: vi.fn(async () => Promise.reject(new Error('nicht benötigt'))),
+  }
+}
 
 function stateResponse(overrides: Partial<CampaignStateResponse> = {}): CampaignStateResponse {
   return {
@@ -54,6 +151,9 @@ function buildRouter(): Router {
 async function mountAt(campaignId: string, api: CampaignApi) {
   const router = buildRouter()
   useCampaignStateStore().useApi(api)
+  // Kolonie- und Galaxie-Store verdrahten; die 3D-Ansicht wird gestubbt, ihre Auswahl treibt der Test.
+  useColonyStore().useApi(colonyApi())
+  useHomeSystemStore().useApi(galaxyApi())
   router.push(`/campaigns/${campaignId}`)
   await router.isReady()
   const wrapper = mount(CampaignView, {
@@ -97,6 +197,29 @@ describe('CampaignView', () => {
       'Die angeforderte Ressource wurde nicht gefunden.',
     )
     expect(wrapper.find('[data-testid="campaign-view-status"]').exists()).toBe(false)
+  })
+
+  it('öffnet das modale Koloniedetail bei Planetenauswahl und schließt es wieder', async () => {
+    const { wrapper } = await mountAt('cmp_1', mockApi())
+
+    // Ohne Auswahl bleibt die Szene als Arbeitsfläche allein sichtbar.
+    expect(wrapper.find('[data-testid="campaign-colony-detail"]').exists()).toBe(false)
+
+    // Auswahl des Heimatplaneten (gleichwertig zu Szene-Picking, Liste oder URL) öffnet das Fenster.
+    const homeSystem = useHomeSystemStore()
+    await homeSystem.loadFromGalaxy('/api/v1/campaigns/cmp_1/galaxy')
+    homeSystem.select('pln_home')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="campaign-colony-detail"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="modal-title"]').text()).toBe('planet.home.name')
+
+    // Schließen entfernt das Fenster und hebt die Auswahl auf; die Szene bleibt bestehen.
+    await wrapper.get('[data-testid="colony-close-action"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="campaign-colony-detail"]').exists()).toBe(false)
+    expect(homeSystem.selectedObjectId).toBeNull()
   })
 
   it('entspricht dem erwarteten Mock-Snapshot des geladenen Zustands', async () => {

@@ -3,3 +3,4 @@
 // statt eigene Fehler- oder Zustandsdarstellungen zu duplizieren.
 
 export { default as ErrorNotice } from './ErrorNotice.vue'
+export { default as ModalWindow } from './ModalWindow.vue'
