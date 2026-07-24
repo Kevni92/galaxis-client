@@ -2,13 +2,12 @@
 
 exports[`CampaignView > entspricht dem erwarteten Mock-Snapshot des geladenen Zustands 1`] = `
 "<nav data-v-8d2c146c="" class="campaign__nav" aria-label="Kampagnennavigation" data-testid="campaign-nav">
-  <h2 data-v-8d2c146c="">Navigation</h2>
+  <h2 data-v-8d2c146c="">Reich</h2>
   <ul data-v-8d2c146c="">
-    <li data-v-8d2c146c="" data-testid="nav-galaxy">Galaxie und Heimatsystem</li>
     <li data-v-8d2c146c="" data-testid="nav-colonies">Kolonien</li>
     <li data-v-8d2c146c="" data-testid="nav-population">Bevölkerung</li>
     <li data-v-8d2c146c="" data-testid="nav-economy">Grundversorgung</li>
   </ul>
-  <p data-v-8d2c146c="" class="campaign__hint"> Die 3D-Systemansicht und die modalen Kolonie- und Planetdetails folgen in den nächsten A1-Schritten. </p>
+  <p data-v-8d2c146c="" class="campaign__hint"> Die modalen Kolonie- und Planetdetails folgen im nächsten A1-Schritt. </p>
 </nav>"
 `;

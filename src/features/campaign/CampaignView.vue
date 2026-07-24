@@ -3,13 +3,17 @@
 // Fachlicher Vertrag: docs/contracts/rest-api/galaxis-rest-v1-a1.yaml (Pfad /api/v1/campaigns/{campaignId}/state)
 //
 // Kampagnen-App-Shell: lädt nach Auswahl den kompakten Kampagnenzustand und stellt die Navigation
-// zu Reich, System und Kolonie über die serverseitigen Linkrelationen bereit. Die 3D-Systemansicht
-// (Issue #9) und das modale Kolonie-/Planetdetail (Issue #10) hängen sich an diese Shell.
-import { onMounted, watch } from 'vue'
+// zu Reich, System und Kolonie über die serverseitigen Linkrelationen bereit. Die bekannte
+// 3D-Heimatsystemansicht (Issue #9) ist als permanente Arbeitsfläche eingebettet; das modale
+// Kolonie-/Planetdetail (Issue #10) folgt.
+import { defineAsyncComponent, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ErrorNotice } from '@/shared/ui'
 import { useCampaignStateStore } from './campaignStateStore'
+
+// Lazy-Import hält Three.js aus dem Startbundle; die Systemansicht lädt erst mit der Kampagne.
+const HomeSystemView = defineAsyncComponent(() => import('@/features/galaxy/HomeSystemView.vue'))
 
 const route = useRoute()
 const store = useCampaignStateStore()
@@ -75,17 +79,21 @@ watch(
         </div>
       </dl>
 
+      <HomeSystemView
+        v-if="links.galaxy"
+        :galaxy-link="links.galaxy"
+        data-testid="campaign-home-system"
+      />
+
       <nav class="campaign__nav" aria-label="Kampagnennavigation" data-testid="campaign-nav">
-        <h2>Navigation</h2>
+        <h2>Reich</h2>
         <ul>
-          <li v-if="links.galaxy" data-testid="nav-galaxy">Galaxie und Heimatsystem</li>
           <li v-if="links.colonies" data-testid="nav-colonies">Kolonien</li>
           <li v-if="links.population" data-testid="nav-population">Bevölkerung</li>
           <li v-if="links.economy" data-testid="nav-economy">Grundversorgung</li>
         </ul>
         <p class="campaign__hint">
-          Die 3D-Systemansicht und die modalen Kolonie- und Planetdetails folgen in den nächsten
-          A1-Schritten.
+          Die modalen Kolonie- und Planetdetails folgen im nächsten A1-Schritt.
         </p>
       </nav>
     </template>

@@ -14,6 +14,7 @@ import {
 } from '@/features/auth'
 import { createHealthApi, HEALTH_API_KEY, useConnectionStore } from '@/features/connection'
 import { createCampaignApi, useCampaignStateStore, useCampaignStore } from '@/features/campaign'
+import { createGalaxyApi, useHomeSystemStore } from '@/features/galaxy'
 
 const app = createApp(App)
 
@@ -33,6 +34,7 @@ useAccountStore().useApi(createAccountApi(restClient))
 const campaignApi = createCampaignApi(restClient)
 useCampaignStore().useApi(campaignApi)
 useCampaignStateStore().useApi(campaignApi)
+useHomeSystemStore().useApi(createGalaxyApi(restClient))
 
 // Verbindungszustand aus den technischen Health-Endpunkten ableiten; die Health-API steht der
 // Entwicklungsanzeige zusätzlich per Bereitstellung zur Verfügung.

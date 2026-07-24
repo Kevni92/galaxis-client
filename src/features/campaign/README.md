@@ -9,16 +9,16 @@ Zusatzfelder stören nicht, und der Client erfindet keine lokalen Defaultregeln.
 pro fachlichem Erstellversuch verhindert Doppelanlagen. Detailressourcen folgen den serverseitigen
 Linkrelationen statt selbst gebauter URLs.
 
-| Datei                    | Verantwortung                                                                           | Fachliche Quelle                                                                                                             |
-| ------------------------ | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `campaignApi.ts`         | Wrapper um `GET`/`POST /api/v1/campaigns` und `GET .../state` (mit ETag) auf dem Client | [`docs/contracts/rest-api/galaxis-rest-v1-a1.yaml`](../../../docs/contracts/rest-api/galaxis-rest-v1-a1.yaml) (`/campaigns`) |
-| `campaignStore.ts`       | Pinia-Store: Liste laden, Kampagne erstellen, Lade- und Fehlerzustände                  | dito                                                                                                                         |
-| `campaignStateStore.ts`  | Pinia-Store: kompakten Kampagnenzustand nach ID laden, `stateVersion`/ETag/Links merken | dito (`/campaigns/{campaignId}/state`)                                                                                       |
-| `campaignError.ts`       | Übersetzt Serverfehler in allgemeine und feldbezogene Formularmeldungen                 | dito (`Error`, `InvalidCampaign`)                                                                                            |
-| `idempotency.ts`         | Erzeugt den Idempotenzschlüssel pro Erstellversuch                                      | dito (Parameter `Idempotency-Key`)                                                                                           |
-| `CreateCampaignForm.vue` | Formular für Seed und Zeitprofil inkl. Schlüssel-Lebenszyklus und Doppelklickschutz     | dito                                                                                                                         |
-| `CampaignListView.vue`   | Kampagnenliste, Erstelldialog und Weiterleitung zur Übersicht (`/campaigns`)            | dito                                                                                                                         |
-| `CampaignView.vue`       | Kampagnen-App-Shell: lädt den Zustand und stellt Navigation über Linkrelationen bereit  | dito (`/campaigns/{campaignId}`)                                                                                             |
+| Datei                    | Verantwortung                                                                                       | Fachliche Quelle                                                                                                             |
+| ------------------------ | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `campaignApi.ts`         | Wrapper um `GET`/`POST /api/v1/campaigns` und `GET .../state` (mit ETag) auf dem Client             | [`docs/contracts/rest-api/galaxis-rest-v1-a1.yaml`](../../../docs/contracts/rest-api/galaxis-rest-v1-a1.yaml) (`/campaigns`) |
+| `campaignStore.ts`       | Pinia-Store: Liste laden, Kampagne erstellen, Lade- und Fehlerzustände                              | dito                                                                                                                         |
+| `campaignStateStore.ts`  | Pinia-Store: kompakten Kampagnenzustand nach ID laden, `stateVersion`/ETag/Links merken             | dito (`/campaigns/{campaignId}/state`)                                                                                       |
+| `campaignError.ts`       | Übersetzt Serverfehler in allgemeine und feldbezogene Formularmeldungen                             | dito (`Error`, `InvalidCampaign`)                                                                                            |
+| `idempotency.ts`         | Erzeugt den Idempotenzschlüssel pro Erstellversuch                                                  | dito (Parameter `Idempotency-Key`)                                                                                           |
+| `CreateCampaignForm.vue` | Formular für Seed und Zeitprofil inkl. Schlüssel-Lebenszyklus und Doppelklickschutz                 | dito                                                                                                                         |
+| `CampaignListView.vue`   | Kampagnenliste, Erstelldialog und Weiterleitung zur Übersicht (`/campaigns`)                        | dito                                                                                                                         |
+| `CampaignView.vue`       | Kampagnen-App-Shell: lädt den Zustand und bettet die 3D-Heimatsystemansicht über `links.galaxy` ein | dito (`/campaigns/{campaignId}`)                                                                                             |
 
 ## Idempotenz und Doppelabsenden
 
@@ -34,8 +34,9 @@ Linkrelationen statt selbst gebauter URLs.
 - Ein Kampagnenwechsel verwirft zuerst den alten Zustand, damit keine fremden Daten sichtbar bleiben.
 - Fehlender Zugriff (`404`/`403`) wird als neutrale Serverfehlermeldung dargestellt, ohne interne
   Details oder die Existenz fremder Kampagnen zu verraten.
-- Die `links`-Relationen (`galaxy`, `colonies`, `population`, `economy`) bilden die Grundlage der
-  weiteren A1-Navigation; die 3D-Systemansicht (#9) und modale Detailfenster (#10) hängen sich hier an.
+- Die `links`-Relationen bilden die Grundlage der weiteren A1-Navigation: `links.galaxy` speist die
+  eingebettete 3D-Heimatsystemansicht ([`features/galaxy`](../galaxy/README.md)); modale Detailfenster
+  für `colonies`/`population`/`economy` (#10) hängen sich an dieselben Relationen an.
 
 ## Abhängigkeiten
 
