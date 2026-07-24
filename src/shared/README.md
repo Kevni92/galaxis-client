@@ -2,10 +2,11 @@
 
 Wiederverwendbare, fachlich neutrale Bausteine ohne Spiellogik.
 
-| Modul                   | Verantwortung                                                       | Fachliche Quelle                                                                                 |
-| ----------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `config/appConfig.ts`   | Auflösung der konfigurierbaren API-Basis-URL und Request-URL-Aufbau | [`docs/contracts/rest-api/galaxis-rest-v1.md`](../../docs/contracts/rest-api/galaxis-rest-v1.md) |
-| [`api/`](api/README.md) | Zentrale REST-Schicht: OpenAPI-Typen, Fetch-Client, Fehlerabbildung | [`docs/contracts/rest-api/galaxis-rest-v1.md`](../../docs/contracts/rest-api/galaxis-rest-v1.md) |
+| Modul                   | Verantwortung                                                           | Fachliche Quelle                                                                                 |
+| ----------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `config/appConfig.ts`   | Auflösung der konfigurierbaren API-Basis-URL und Request-URL-Aufbau     | [`docs/contracts/rest-api/galaxis-rest-v1.md`](../../docs/contracts/rest-api/galaxis-rest-v1.md) |
+| [`api/`](api/README.md) | Zentrale REST-Schicht: OpenAPI-Typen, Fetch-Client, Fehlerabbildung     | [`docs/contracts/rest-api/galaxis-rest-v1.md`](../../docs/contracts/rest-api/galaxis-rest-v1.md) |
+| [`ui/`](ui/README.md)   | Wiederverwendbare, fachlich neutrale UI-Bausteine (z. B. `ErrorNotice`) | [`docs/contracts/rest-api/galaxis-rest-v1.md`](../../docs/contracts/rest-api/galaxis-rest-v1.md) |
 
 ## Konfiguration
 

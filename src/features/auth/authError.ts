@@ -15,8 +15,11 @@ export interface AuthFormError {
   readonly fieldErrors: Readonly<Record<string, string>>
 }
 
-/** Fallback, wenn keine verwertbare Serverantwort vorliegt (Netzwerk, Timeout, Unbekanntes). */
+/** Fallback, wenn keine verwertbare Serverantwort vorliegt (Unbekanntes). */
 const GENERIC_MESSAGE = 'Aktion fehlgeschlagen. Bitte später erneut versuchen.'
+
+/** Meldung für nicht erreichbaren Server; trennt einen Serverausfall von falschen Zugangsdaten. */
+const UNREACHABLE_MESSAGE = 'Server nicht erreichbar. Bitte Verbindung prüfen und erneut versuchen.'
 
 /**
  * Kurze, verständliche Meldung je maschinenlesbarem Feldgrund. Unbekannte Gründe erhalten
@@ -43,6 +46,10 @@ function fieldReasonMessage(reason: string): string {
  */
 export function extractAuthError(error: unknown): AuthFormError {
   if (isApiError(error)) {
+    // Serverausfall bewusst anders melden als eine abgelehnte Anmeldung (z. B. `401`).
+    if (error.kind === 'network' || error.kind === 'timeout') {
+      return { message: UNREACHABLE_MESSAGE, fieldErrors: {} }
+    }
     const fieldErrors: Record<string, string> = {}
     for (const detail of error.details) {
       // Erste Meldung je Feld gewinnt; weitere Gründe desselben Feldes werden nicht überschrieben.

@@ -17,8 +17,11 @@ export {
   networkError,
   timeoutError,
   abortedError,
+  toUiError,
 } from './apiError'
 export type { ApiErrorKind, UiError } from './apiError'
+export { withSafeRetry, SAFE_HTTP_METHODS } from './retry'
+export type { SafeRetryOptions } from './retry'
 export { anonymousSession, staticSessionProvider } from './session'
 export type { SessionProvider } from './session'
 export { createCorrelationId } from './correlation'

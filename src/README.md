@@ -9,15 +9,15 @@ Maßgebliche Quellen: [Decision 0007](../docs/decisions/0007-client-ui-rendering
 
 ## Struktur
 
-| Modul                             | Verantwortung                                                         | Fachliche Quelle                             |
-| --------------------------------- | --------------------------------------------------------------------- | -------------------------------------------- |
-| `main.ts`                         | Bootstrap: Pinia, REST-Client/Session, Router-Guard, Mount            | Decision 0007                                |
-| `App.vue`                         | Wurzelkomponente: Fehlergrenze umschließt die App-Shell               | Decision 0007                                |
-| [`app/`](app/README.md)           | Shell, Routing, Fehlergrenze und anwendungsweiter Zustand             | Decision 0007, `docs/12-ui-ux/`              |
-| [`features/`](features/README.md) | Fachnahe Feature-Module, aktuell der Anmeldezustand (Auth)            | `docs/contracts/rest-api/galaxis-rest-v1.md` |
-| [`shared/`](shared/README.md)     | Technische Querschnittsbausteine, u. a. konfigurierbare API-Basis-URL | `docs/contracts/rest-api/galaxis-rest-v1.md` |
-| `views/`                          | Routenansichten (Start, Auffangansicht)                               | –                                            |
-| `assets/`                         | Minimale technische Basis-Styles (kein finales Designsystem)          | Decision 0007                                |
+| Modul                             | Verantwortung                                                          | Fachliche Quelle                             |
+| --------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------- |
+| `main.ts`                         | Bootstrap: Pinia, REST-Client/Session, Router-Guard, Mount             | Decision 0007                                |
+| `App.vue`                         | Wurzelkomponente: Fehlergrenze, globaler Verbindungshinweis, App-Shell | Decision 0007                                |
+| [`app/`](app/README.md)           | Shell, Routing, Fehlergrenze und anwendungsweiter Zustand              | Decision 0007, `docs/12-ui-ux/`              |
+| [`features/`](features/README.md) | Fachnahe Feature-Module: Anmeldezustand (Auth) und Verbindungszustand  | `docs/contracts/rest-api/galaxis-rest-v1.md` |
+| [`shared/`](shared/README.md)     | Technische Querschnittsbausteine, u. a. konfigurierbare API-Basis-URL  | `docs/contracts/rest-api/galaxis-rest-v1.md` |
+| `views/`                          | Routenansichten (Start, Auffangansicht)                                | –                                            |
+| `assets/`                         | Minimale technische Basis-Styles (kein finales Designsystem)           | Decision 0007                                |
 
 ## Geplante Erweiterungen (noch nicht Teil von A0)
 

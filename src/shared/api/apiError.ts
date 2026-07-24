@@ -13,7 +13,7 @@ import type {
  * gemäß Vertrag gelieferten Fehlerkörper; die übrigen Klassen entstehen clientseitig,
  * wenn keine verwertbare Serverantwort vorliegt.
  */
-export type ApiErrorKind = 'server' | 'http' | 'network' | 'timeout' | 'aborted'
+export type ApiErrorKind = 'server' | 'http' | 'network' | 'timeout' | 'aborted' | 'unknown'
 
 /** Für die UI aufbereiteter Fehler, unabhängig von der konkreten Transportursache. */
 export interface UiError {
@@ -156,4 +156,20 @@ export function abortedError(correlationId: string): ApiError {
     correlationId,
     retryable: false,
   })
+}
+
+/**
+ * Normalisiert einen beliebigen geworfenen Wert in eine für die UI verwendbare Sicht.
+ * `ApiError` wird direkt übernommen; alles andere ergibt einen neutralen `unknown`-Fehler,
+ * ohne interne Details oder erfundene Serverinformationen offenzulegen.
+ */
+export function toUiError(error: unknown): UiError {
+  if (isApiError(error)) return error.toUiError()
+  return {
+    kind: 'unknown',
+    code: 'UNKNOWN',
+    message: 'Ein unerwarteter Fehler ist aufgetreten.',
+    retryable: false,
+    details: [],
+  }
 }
