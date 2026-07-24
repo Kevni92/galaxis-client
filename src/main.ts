@@ -12,6 +12,7 @@ import {
   useAccountStore,
   useSessionStore,
 } from '@/features/auth'
+import { createHealthApi, HEALTH_API_KEY, useConnectionStore } from '@/features/connection'
 
 const app = createApp(App)
 
@@ -29,6 +30,13 @@ const restClient = createRestClient({ session: session.sessionProvider })
 session.useApi(createSessionApi(restClient))
 useAccountStore().useApi(createAccountApi(restClient))
 
+// Verbindungszustand aus den technischen Health-Endpunkten ableiten; die Health-API steht der
+// Entwicklungsanzeige zusätzlich per Bereitstellung zur Verfügung.
+const healthApi = createHealthApi(restClient)
+const connection = useConnectionStore()
+connection.useApi(healthApi)
+app.provide(HEALTH_API_KEY, healthApi)
+
 // Nicht angemeldete Zugriffe auf geschützte Routen landen auf der Anmeldemaske;
 // der ursprüngliche Pfad wird als `redirect`-Query mitgegeben.
 router.beforeEach(
@@ -40,5 +48,7 @@ app.use(router)
 
 // Startprüfung anstoßen; der Guard wartet bei geschützten Routen auf das Ergebnis.
 void session.ensureVerified()
+// Erreichbarkeit des Servers einmalig prüfen; weitere Prüfungen laufen nur auf Nutzeraktion.
+void connection.check()
 
 app.mount('#app')

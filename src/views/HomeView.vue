@@ -1,7 +1,12 @@
 <script setup lang="ts">
+import { defineAsyncComponent } from 'vue'
 import { useAppStore } from '@/app/stores/appStore'
 
 const app = useAppStore()
+
+// Reine Entwicklungsanzeige: nur im Dev-Build laden, nicht in der produktiven Oberfläche.
+const isDev = import.meta.env.DEV
+const HealthPanel = defineAsyncComponent(() => import('@/features/connection/HealthPanel.vue'))
 </script>
 
 <template>
@@ -12,6 +17,7 @@ const app = useAppStore()
       API-Basis-URL:
       <code>{{ app.isServerRelative() ? '(server-relativ)' : app.apiBaseUrl }}</code>
     </p>
+    <HealthPanel v-if="isDev" />
   </section>
 </template>
 

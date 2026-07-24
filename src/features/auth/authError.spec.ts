@@ -53,8 +53,24 @@ describe('extractAuthError', () => {
     expect(result.fieldErrors.email).toBe('Ungültiges Format.')
   })
 
-  it('liefert eine neutrale Meldung für Nicht-Server-Fehler', () => {
-    const result = extractAuthError(networkError('cor_1', new Error('offline')))
+  it('meldet einen Serverausfall getrennt von falschen Zugangsdaten', () => {
+    const unreachable = extractAuthError(networkError('cor_1', new Error('offline')))
+    const rejected = extractAuthError(
+      new ApiError({
+        kind: 'server',
+        code: 'AUTHENTICATION_FAILED',
+        message: 'Anmeldung fehlgeschlagen.',
+        status: 401,
+      }),
+    )
+
+    expect(unreachable.fieldErrors).toEqual({})
+    expect(unreachable.message).toContain('nicht erreichbar')
+    expect(unreachable.message).not.toBe(rejected.message)
+  })
+
+  it('liefert eine neutrale Meldung für Nicht-Api-Fehler', () => {
+    const result = extractAuthError(new Error('offline'))
 
     expect(result.fieldErrors).toEqual({})
     expect(result.message).not.toContain('offline')
