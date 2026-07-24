@@ -6,6 +6,9 @@ test-results
 pnpm-lock.yaml
 docs
 
+# Aus OpenAPI generierte Typen (nicht manuell bearbeiten, siehe src/shared/api/README.md)
+src/shared/api/generated
+
 # Repository-Governance-Dateien (nicht durch den Client-Formatter verwaltet)
 AGENTS.md
 CLAUDE.md

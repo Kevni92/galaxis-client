@@ -16,6 +16,7 @@ export default defineConfigWithVueTs(
     '**/playwright-report/**',
     '**/test-results/**',
     'docs/**',
+    'src/shared/api/generated/**',
   ]),
 
   pluginVue.configs['flat/essential'],

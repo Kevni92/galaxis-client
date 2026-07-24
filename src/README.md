@@ -20,7 +20,6 @@ Maßgebliche Quellen: [Decision 0007](../docs/decisions/0007-client-ui-rendering
 
 ## Geplante Erweiterungen (noch nicht Teil von A0)
 
-- REST-Client und aus OpenAPI generierte Typen (`galaxis-client#2`).
 - Session-Store und geschützte Routen (`galaxis-client#3`).
 - Gekapselte Three.js-Rendering-Schicht, Fenstersystem und Outliner.
 - Lokalisierungs- und Begriffskatalogschicht (Decision 0007).
