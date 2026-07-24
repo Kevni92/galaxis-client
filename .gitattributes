@@ -1,0 +1,7 @@
+# Konsistente Zeilenenden im Repository (LF), unabhängig vom Betriebssystem.
+* text=auto eol=lf
+
+# Binärdateien nicht anfassen.
+*.png binary
+*.jpg binary
+*.ico binary
