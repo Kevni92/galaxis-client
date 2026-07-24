@@ -151,14 +151,25 @@ describe('useHomeSystemStore', () => {
     expect(store.objects).toHaveLength(2)
   })
 
-  it('stellt einen inkonsistenten Galaxiestand ohne Heimatsystem als Fehler dar', async () => {
+  it('stellt ein nicht sichtbares System als leeren, sicheren Zustand dar', async () => {
     const store = useHomeSystemStore()
     store.useApi(mockApi({ getGalaxy: vi.fn(async () => galaxy({ knownSystems: [] })) }))
 
     await store.loadFromGalaxy('/galaxy')
 
-    expect(store.status).toBe('error')
+    expect(store.status).toBe('empty')
     expect(store.system).toBeNull()
+  })
+
+  it('lädt nur ein angefordertes, bekanntes System und errät keine unbekannte ID', async () => {
+    const api = mockApi()
+    const store = useHomeSystemStore()
+    store.useApi(api)
+
+    await store.loadFromGalaxy('/galaxy', 'sys_unknown')
+
+    expect(store.status).toBe('empty')
+    expect(api.getSystem).not.toHaveBeenCalled()
   })
 
   it('stellt einen fehlenden Systemzugriff ohne Informationsleck dar', async () => {

@@ -22,6 +22,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/campaign/CampaignView.vue'),
   },
   {
+    path: '/campaigns/:campaignId/systems/:systemId',
+    name: 'campaign-system',
+    meta: { requiresAuth: true },
+    component: () => import('@/features/campaign/CampaignView.vue'),
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/features/auth/AuthView.vue'),

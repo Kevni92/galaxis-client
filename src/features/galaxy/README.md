@@ -19,8 +19,8 @@ Auswahl ist Clientzustand und bleibt über die URL nachvollziehbar.
 
 1. Die Kampagnen-App-Shell (`features/campaign/CampaignView.vue`) übergibt die Linkrelation
    `links.galaxy` aus dem Kampagnenzustand.
-2. `homeSystemStore.loadFromGalaxy(galaxyLink)` lädt die Galaxieübersicht, ermittelt das Startsystem
-   und folgt dessen `self`-Link zum Systemdetail.
+2. `homeSystemStore.loadFromGalaxy(galaxyLink, systemId?)` lädt die Galaxieübersicht, prüft den
+   angeforderten Systemkontext gegen bekannte Systeme und folgt dessen `self`-Link zum Systemdetail.
 3. Sterne und Planeten werden zu einer neutralen `SystemObject`-Liste (Liste) und `SceneObject`-Liste
    (Szene) normalisiert. `ready` gilt erst nach der Systemantwort.
 
@@ -29,6 +29,8 @@ Auswahl ist Clientzustand und bleibt über die URL nachvollziehbar.
 - Objektliste und 3D-Szene wählen dasselbe Objekt aus (Maus, Tastatur und Picking sind gleichwertig).
 - Die Auswahl wird als `?object=<id>`-Query gespiegelt und beim Laden wiederhergestellt.
 - Unbekannte oder nicht mehr vorhandene IDs werden verworfen; es wird nichts geleakt.
+- Ein unbekanntes Deep-Link-System bleibt ein leerer, sicherer Zustand; 404/403 und Ladefehler
+  werden als Serverfehler dargestellt.
 - `prefers-reduced-motion` deaktiviert die präsentationale Szenenrotation.
 
 ## Bekannte Folgearbeit
