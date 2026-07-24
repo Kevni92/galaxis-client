@@ -9,16 +9,17 @@ Zusatzfelder stören nicht, und der Client erfindet keine lokalen Defaultregeln.
 pro fachlichem Erstellversuch verhindert Doppelanlagen. Detailressourcen folgen den serverseitigen
 Linkrelationen statt selbst gebauter URLs.
 
-| Datei                    | Verantwortung                                                                                       | Fachliche Quelle                                                                                                             |
-| ------------------------ | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `campaignApi.ts`         | Wrapper um `GET`/`POST /api/v1/campaigns` und `GET .../state` (mit ETag) auf dem Client             | [`docs/contracts/rest-api/galaxis-rest-v1-a1.yaml`](../../../docs/contracts/rest-api/galaxis-rest-v1-a1.yaml) (`/campaigns`) |
-| `campaignStore.ts`       | Pinia-Store: Liste laden, Kampagne erstellen, Lade- und Fehlerzustände                              | dito                                                                                                                         |
-| `campaignStateStore.ts`  | Pinia-Store: kompakten Kampagnenzustand nach ID laden, `stateVersion`/ETag/Links merken             | dito (`/campaigns/{campaignId}/state`)                                                                                       |
-| `campaignError.ts`       | Übersetzt Serverfehler in allgemeine und feldbezogene Formularmeldungen                             | dito (`Error`, `InvalidCampaign`)                                                                                            |
-| `idempotency.ts`         | Erzeugt den Idempotenzschlüssel pro Erstellversuch                                                  | dito (Parameter `Idempotency-Key`)                                                                                           |
-| `CreateCampaignForm.vue` | Formular für Seed und Zeitprofil inkl. Schlüssel-Lebenszyklus und Doppelklickschutz                 | dito                                                                                                                         |
-| `CampaignListView.vue`   | Kampagnenliste, Erstelldialog und Weiterleitung zur Übersicht (`/campaigns`)                        | dito                                                                                                                         |
-| `CampaignView.vue`       | Kampagnen-App-Shell: lädt den Zustand und bettet die 3D-Heimatsystemansicht über `links.galaxy` ein | dito (`/campaigns/{campaignId}`)                                                                                             |
+| Datei                    | Verantwortung                                                                            | Fachliche Quelle                                                                                                             |
+| ------------------------ | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `campaignApi.ts`         | Wrapper um `GET`/`POST /api/v1/campaigns` und `GET .../state` (mit ETag) auf dem Client  | [`docs/contracts/rest-api/galaxis-rest-v1-a1.yaml`](../../../docs/contracts/rest-api/galaxis-rest-v1-a1.yaml) (`/campaigns`) |
+| `campaignStore.ts`       | Pinia-Store: Liste laden, Kampagne erstellen, Lade- und Fehlerzustände                   | dito                                                                                                                         |
+| `campaignStateStore.ts`  | Pinia-Store: kompakten Kampagnenzustand nach ID laden, `stateVersion`/ETag/Links merken  | dito (`/campaigns/{campaignId}/state`)                                                                                       |
+| `campaignError.ts`       | Übersetzt Serverfehler in allgemeine und feldbezogene Formularmeldungen                  | dito (`Error`, `InvalidCampaign`)                                                                                            |
+| `idempotency.ts`         | Erzeugt den Idempotenzschlüssel pro Erstellversuch                                       | dito (Parameter `Idempotency-Key`)                                                                                           |
+| `CreateCampaignForm.vue` | Formular für Seed und Zeitprofil inkl. Schlüssel-Lebenszyklus und Doppelklickschutz      | dito                                                                                                                         |
+| `CampaignListView.vue`   | Kampagnenliste, Erstelldialog und Weiterleitung zur Übersicht (`/campaigns`)             | dito                                                                                                                         |
+| `CampaignView.vue`       | Kampagnen-App-Shell mit Kontextpfad, Systemroute und modaler Deep-Link-Wiederherstellung | dito (`/campaigns/{campaignId}/systems/{systemId}`)                                                                          |
+| `campaignNavigation.ts`  | Validiert Fenster- und Tabzustand aus `object`-/`window`-/`tab`-Queries                  | Decision 0007, UI-Vertrag `raumansichten-auswahl-und-kontextaktionen.md`                                                     |
 
 ## Idempotenz und Doppelabsenden
 
@@ -48,6 +49,6 @@ Linkrelationen statt selbst gebauter URLs.
 ## Verdrahtung
 
 `main.ts` erzeugt die `CampaignApi` einmal und bindet sie über `useApi` an `campaignStore` und
-`campaignStateStore`. Die Routen `/campaigns` (Liste/Erstellen) und `/campaigns/:campaignId`
-(App-Shell) tragen `meta.requiresAuth`; die Hauptnavigation der App-Shell verlinkt die Kampagnen
-nur im angemeldeten Zustand.
+`campaignStateStore`. Die Routen `/campaigns` (Liste/Erstellen), `/campaigns/:campaignId` und
+`/campaigns/:campaignId/systems/:systemId` (App-Shell und kanonischer Deep Link) tragen
+`meta.requiresAuth`; Fenster- und Auswahlzustand bleiben als Clientzustand in den Queries.

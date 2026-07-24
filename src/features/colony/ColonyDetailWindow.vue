@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// Feature: GAL-CLIENT-A1-NAV-001
 // Feature: GAL-COLONY-HOME-001
 // Fachlicher Vertrag: docs/contracts/rest-api/galaxis-rest-v1-a1.yaml (/colonies, /population, /economy)
 // Designentscheidung: docs/decisions/0007-client-ui-rendering-und-lokalisierung.md
@@ -12,6 +13,7 @@ import { storeToRefs } from 'pinia'
 import { ErrorNotice, ModalWindow } from '@/shared/ui'
 import { useColonyStore } from './colonyStore'
 import { formatCoverageDays, formatInstant, formatInteger } from './colonyFormat'
+import type { DetailTabId } from '@/features/campaign/campaignNavigation'
 
 /** Serverbekannte Planetauswahl aus der Systemansicht; nur zur Grunddarstellung, keine Ableitung. */
 interface SelectedPlanet {
@@ -22,15 +24,17 @@ interface SelectedPlanet {
   y: number
 }
 
-const props = defineProps<{ planet: SelectedPlanet }>()
-const emit = defineEmits<{ close: [] }>()
+const props = withDefaults(defineProps<{ planet: SelectedPlanet; initialTab?: DetailTabId }>(), {
+  initialTab: 'overview' as DetailTabId,
+})
+const emit = defineEmits<{ close: []; 'tab-change': [tab: DetailTabId] }>()
 
 const store = useColonyStore()
 const { selectedColony, population, economy, detailStatus, detailError } = storeToRefs(store)
 
-type TabId = 'overview' | 'population' | 'supply'
+type TabId = DetailTabId
 
-const activeTab = ref<TabId>('overview')
+const activeTab = ref<TabId>(props.initialTab)
 
 /** Bevölkerung und Grundversorgung existieren nur mit bekannter Kolonie. */
 const hasColony = computed(() => selectedColony.value !== null)
@@ -50,10 +54,23 @@ watch(
   () => (activeTab.value = 'overview'),
 )
 
+watch(
+  () => props.initialTab,
+  (tab) => (activeTab.value = tab),
+)
+
 // Fällt der aktive Tab weg (z. B. Kolonie unbekannt), auf die Übersicht zurückfallen.
 watch(tabs, (list) => {
-  if (!list.some((tab) => tab.id === activeTab.value)) activeTab.value = 'overview'
+  if (!list.some((tab) => tab.id === activeTab.value)) {
+    activeTab.value = 'overview'
+    emit('tab-change', activeTab.value)
+  }
 })
+
+function setActiveTab(tab: TabId): void {
+  activeTab.value = tab
+  emit('tab-change', tab)
+}
 
 function tabPanelId(id: TabId): string {
   return `colony-tabpanel-${id}`
@@ -64,7 +81,7 @@ function tabButtonId(id: TabId): string {
 }
 
 function focusTab(id: TabId): void {
-  activeTab.value = id
+  setActiveTab(id)
   document.getElementById(tabButtonId(id))?.focus()
 }
 
@@ -105,7 +122,7 @@ function onTablistKeydown(event: KeyboardEvent): void {
         :tabindex="activeTab === tab.id ? 0 : -1"
         :data-selected="activeTab === tab.id ? 'true' : undefined"
         :data-testid="`colony-tab-${tab.id}`"
-        @click="activeTab = tab.id"
+        @click="setActiveTab(tab.id)"
       >
         {{ tab.label }}
       </button>

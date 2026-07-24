@@ -114,13 +114,19 @@ function buildRouter(query: Record<string, string> = {}): Router {
   return router
 }
 
-async function mountView(options: { api?: GalaxyApi; query?: Record<string, string> } = {}) {
+async function mountView(
+  options: { api?: GalaxyApi; query?: Record<string, string>; systemId?: string } = {},
+) {
   const scene = fakeScene()
   const router = buildRouter(options.query)
   useHomeSystemStore().useApi(options.api ?? mockApi())
   await router.isReady()
   const wrapper = mount(HomeSystemView, {
-    props: { galaxyLink: '/api/v1/campaigns/cmp_1/galaxy', sceneFactory: scene.factory },
+    props: {
+      galaxyLink: '/api/v1/campaigns/cmp_1/galaxy',
+      systemId: options.systemId,
+      sceneFactory: scene.factory,
+    },
     global: { plugins: [router] },
   })
   await flushPromises()
@@ -193,6 +199,23 @@ describe('HomeSystemView', () => {
     expect(wrapper.get('[data-testid="home-system-error"]').text()).toContain(
       'Die angeforderte Ressource wurde nicht gefunden.',
     )
+    expect(wrapper.find('[data-testid="home-system-objects"]').exists()).toBe(false)
+  })
+
+  it('zeigt für ein nicht sichtbares Deep-Link-System einen sicheren Leerzustand', async () => {
+    const { wrapper } = await mountView({ systemId: 'sys_unknown' })
+
+    expect(wrapper.get('[data-testid="home-system-empty"]').text()).toContain('nicht sichtbar')
+    expect(wrapper.find('[data-testid="home-system-objects"]').exists()).toBe(false)
+  })
+
+  it('kennzeichnet ein bekanntes System ohne sichtbare Objekte als leer', async () => {
+    const emptySystem = { ...system(), stars: [], planets: [] }
+    const { wrapper } = await mountView({
+      api: mockApi({ getSystem: vi.fn(async () => emptySystem) }),
+    })
+
+    expect(wrapper.find('[data-testid="home-system-no-objects"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="home-system-objects"]').exists()).toBe(false)
   })
 })

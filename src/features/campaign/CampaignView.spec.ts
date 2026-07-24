@@ -144,6 +144,11 @@ function buildRouter(): Router {
     routes: [
       { path: '/campaigns', name: 'campaigns', component: Stub },
       { path: '/campaigns/:campaignId', name: 'campaign', component: CampaignView },
+      {
+        path: '/campaigns/:campaignId/systems/:systemId',
+        name: 'campaign-system',
+        component: CampaignView,
+      },
     ],
   })
 }
@@ -200,7 +205,7 @@ describe('CampaignView', () => {
   })
 
   it('öffnet das modale Koloniedetail bei Planetenauswahl und schließt es wieder', async () => {
-    const { wrapper } = await mountAt('cmp_1', mockApi())
+    const { wrapper, router } = await mountAt('cmp_1', mockApi())
 
     // Ohne Auswahl bleibt die Szene als Arbeitsfläche allein sichtbar.
     expect(wrapper.find('[data-testid="campaign-colony-detail"]').exists()).toBe(false)
@@ -214,12 +219,52 @@ describe('CampaignView', () => {
     expect(wrapper.find('[data-testid="campaign-colony-detail"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="modal-title"]').text()).toBe('planet.home.name')
 
-    // Schließen entfernt das Fenster und hebt die Auswahl auf; die Szene bleibt bestehen.
+    // Schließen entfernt den Fensterzustand, die Auswahl bleibt als räumlicher Kontext erhalten.
     await wrapper.get('[data-testid="colony-close-action"]').trigger('click')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="campaign-colony-detail"]').exists()).toBe(false)
-    expect(homeSystem.selectedObjectId).toBeNull()
+    expect(homeSystem.selectedObjectId).toBe('pln_home')
+    expect(router.currentRoute.value.query.window).toBeUndefined()
+  })
+
+  it('stellt Fenster und aktiven Tab aus einem Deep Link wieder her', async () => {
+    const { wrapper, router } = await mountAt('cmp_1', mockApi())
+    await router.replace({
+      query: { object: 'pln_home', window: 'colony', tab: 'population' },
+    })
+
+    const homeSystem = useHomeSystemStore()
+    await homeSystem.loadFromGalaxy('/api/v1/campaigns/cmp_1/galaxy')
+    homeSystem.select('pln_home')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="campaign-colony-detail"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="colony-tab-population"]').attributes('aria-selected')).toBe(
+      'true',
+    )
+    expect(router.currentRoute.value.query).toEqual({
+      object: 'pln_home',
+      window: 'colony',
+      tab: 'population',
+    })
+  })
+
+  it('normalisiert einen unbekannten Detail-Tab ohne Fensterwechsel', async () => {
+    const { wrapper, router } = await mountAt('cmp_1', mockApi())
+    await router.replace({
+      query: { object: 'pln_home', window: 'colony', tab: 'unknown' },
+    })
+
+    const homeSystem = useHomeSystemStore()
+    await homeSystem.loadFromGalaxy('/api/v1/campaigns/cmp_1/galaxy')
+    homeSystem.select('pln_home')
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="colony-tab-overview"]').attributes('aria-selected')).toBe(
+      'true',
+    )
+    expect(router.currentRoute.value.query.tab).toBe('overview')
   })
 
   it('entspricht dem erwarteten Mock-Snapshot des geladenen Zustands', async () => {

@@ -1,4 +1,5 @@
 // Feature: GAL-GALAXY-HOME-VIEW-001
+// Feature: GAL-CLIENT-A1-NAV-001
 // Fachlicher Vertrag: docs/contracts/rest-api/galaxis-rest-v1-a1.yaml (/campaigns/{id}/galaxy, /systems/{systemId})
 // Designentscheidung: docs/decisions/0007-client-ui-rendering-und-lokalisierung.md
 
@@ -9,7 +10,7 @@ import type { GalaxyApi, PlanetObject, StarObject, SystemDetailResponse } from '
 import type { SceneObject } from './rendering/systemScene'
 
 /** Ladezustand des Heimatsystems; `ready` wird erst nach einer Serverantwort gesetzt. */
-export type HomeSystemStatus = 'idle' | 'loading' | 'ready' | 'error'
+export type HomeSystemStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'error'
 
 /** Normalisierte, ausschließlich serverbekannte Sicht auf ein Raumobjekt für Liste und Szene. */
 export interface SystemObject {
@@ -98,21 +99,24 @@ export const useHomeSystemStore = defineStore('homeSystem', () => {
    * über dessen `self`-Link. `ready` gilt erst nach der Systemantwort. Fehler (auch fehlender Zugriff
    * oder ein inkonsistenter Galaxiestand) werden ohne interne Details als UiError dargestellt.
    */
-  async function loadFromGalaxy(galaxyLink: string): Promise<void> {
+  async function loadFromGalaxy(galaxyLink: string, requestedSystemId?: string): Promise<void> {
     const client = requireApi()
+    system.value = null
+    selectedObjectId.value = null
     status.value = 'loading'
     error.value = null
     try {
       const galaxy = await client.getGalaxy(galaxyLink)
-      const home = galaxy.knownSystems.find((s) => s.systemId === galaxy.startSystemId)
+      const targetSystemId = requestedSystemId ?? galaxy.startSystemId
+      const home = galaxy.knownSystems.find((s) => s.systemId === targetSystemId)
       const systemLink = home?.links?.self
-      if (!systemLink) throw new Error('Kein bekanntes Heimatsystem in der Galaxieübersicht.')
+      if (!systemLink) {
+        // Ein Deep-Link darf keine nicht sichtbare System-ID erraten oder aufzählen.
+        status.value = 'empty'
+        return
+      }
       const detail = await client.getSystem(systemLink)
       system.value = detail
-      // Auswahl verwerfen, falls das zuvor gewählte Objekt im geladenen System nicht existiert.
-      if (selectedObjectId.value && !objects.value.some((o) => o.id === selectedObjectId.value)) {
-        selectedObjectId.value = null
-      }
       status.value = 'ready'
     } catch (cause) {
       error.value = toUiError(cause)

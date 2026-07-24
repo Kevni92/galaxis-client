@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// Feature: GAL-CLIENT-A1-NAV-001
 // Feature: GAL-API-A1-STATE-001
 // Fachlicher Vertrag: docs/contracts/rest-api/galaxis-rest-v1-a1.yaml (Pfad /api/v1/campaigns/{campaignId}/state)
 //
@@ -7,31 +8,66 @@
 // 3D-Heimatsystemansicht (Issue #9) ist als permanente Arbeitsfläche eingebettet; die Shell öffnet
 // beim Auswählen eines Planeten das modale Kolonie-/Planetdetail (Issue #10) über der Szene.
 import { computed, defineAsyncComponent, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ErrorNotice } from '@/shared/ui'
 import { useHomeSystemStore } from '@/features/galaxy'
 import { ColonyDetailWindow, useColonyStore } from '@/features/colony'
 import { useCampaignStateStore } from './campaignStateStore'
+import { detailQuery, isDetailTab, isDetailWindow, type DetailTabId } from './campaignNavigation'
 
 // Lazy-Import hält Three.js aus dem Startbundle; die Systemansicht lädt erst mit der Kampagne.
 const HomeSystemView = defineAsyncComponent(() => import('@/features/galaxy/HomeSystemView.vue'))
 
 const route = useRoute()
+const router = useRouter()
 const store = useCampaignStateStore()
 const { state, status, error, stateVersion, controlledEmpire, links } = storeToRefs(store)
 
 const homeSystem = useHomeSystemStore()
 const colony = useColonyStore()
-const { selectedObject } = storeToRefs(homeSystem)
+const { selectedObject, status: homeSystemStatus, system: homeSystemData } = storeToRefs(homeSystem)
 
 /** Das modale Detailfenster öffnet, solange ein Planet gewählt ist; die Szene bleibt im Hintergrund. */
 const selectedPlanet = computed(() =>
   selectedObject.value?.kind === 'planet' ? selectedObject.value : null,
 )
 
+const detailWindow = computed(() =>
+  isDetailWindow(route.query.window) ? route.query.window : null,
+)
+const rawDetailWindow = computed(() => route.query.window)
+const rawDetailTab = computed(() => route.query.tab)
+const detailTab = computed<DetailTabId>(() =>
+  isDetailTab(route.query.tab) ? route.query.tab : 'overview',
+)
+
 function currentCampaignId(): string {
   return route.params.campaignId as string
+}
+
+function currentSystemId(): string | undefined {
+  return typeof route.params.systemId === 'string' ? route.params.systemId : undefined
+}
+
+function replaceQuery(query: LocationQueryRaw): void {
+  void router.replace({ query })
+}
+
+function queryWithoutDetail(): LocationQueryRaw {
+  const query = { ...route.query }
+  delete query.window
+  delete query.tab
+  return query
+}
+
+function closeDetail(): void {
+  replaceQuery(queryWithoutDetail())
+}
+
+function onDetailTabChange(tab: DetailTabId): void {
+  if (!detailWindow.value) return
+  replaceQuery({ ...route.query, ...detailQuery('colony', tab) })
 }
 
 onMounted(() => {
@@ -40,9 +76,21 @@ onMounted(() => {
 
 // Deep-Link-Wechsel zwischen Kampagnen ohne Neumontage der Komponente berücksichtigen.
 watch(
-  () => route.params.campaignId,
-  (id) => {
+  () => [route.params.campaignId, route.params.systemId],
+  ([id]) => {
     if (typeof id === 'string') void store.loadState(id)
+  },
+)
+
+watch(
+  () => [homeSystemStatus.value, homeSystemData.value?.systemId, currentSystemId()],
+  ([status, systemId, requestedSystemId]) => {
+    if (status !== 'ready' || typeof systemId !== 'string' || systemId === requestedSystemId) return
+    void router.replace({
+      name: 'campaign-system',
+      params: { campaignId: currentCampaignId(), systemId },
+      query: route.query,
+    })
   },
 )
 
@@ -61,9 +109,34 @@ watch(
   (planetId) => void colony.selectPlanet(planetId),
 )
 
-function closeDetail(): void {
-  homeSystem.select(null)
-}
+watch(
+  () => selectedPlanet.value?.id ?? null,
+  (planetId) => {
+    if (homeSystemStatus.value === 'ready' && planetId && rawDetailWindow.value === undefined) {
+      replaceQuery({ ...route.query, ...detailQuery('colony', detailTab.value) })
+    }
+  },
+)
+
+// Auswahl öffnet das Planet-/Koloniefenster; Schließen entfernt nur den Fensterzustand.
+watch(
+  () => [homeSystemStatus.value, route.query.object, rawDetailWindow.value, rawDetailTab.value],
+  ([status, , rawWindow, rawTab]) => {
+    if (status !== 'ready') return
+    if (
+      !isDetailWindow(rawWindow) &&
+      (rawWindow !== undefined || route.query.object === undefined)
+    ) {
+      replaceQuery(queryWithoutDetail())
+    } else if (
+      isDetailWindow(rawWindow) &&
+      route.query.object !== undefined &&
+      !isDetailTab(rawTab)
+    ) {
+      replaceQuery({ ...route.query, tab: 'overview' })
+    }
+  },
+)
 </script>
 
 <template>
@@ -112,15 +185,40 @@ function closeDetail(): void {
       <HomeSystemView
         v-if="links.galaxy"
         :galaxy-link="links.galaxy"
+        :system-id="currentSystemId()"
         data-testid="campaign-home-system"
       />
 
       <ColonyDetailWindow
-        v-if="selectedPlanet"
+        v-if="selectedPlanet && detailWindow === 'colony'"
         :planet="selectedPlanet"
+        :initial-tab="detailTab"
         data-testid="campaign-colony-detail"
         @close="closeDetail"
+        @tab-change="onDetailTabChange"
       />
+
+      <nav class="campaign__context" aria-label="Kampagnenkontext" data-testid="campaign-context">
+        <RouterLink :to="{ name: 'campaigns' }">Kampagnen</RouterLink>
+        <span aria-hidden="true">→</span>
+        <RouterLink
+          :to="{
+            name: 'campaign',
+            params: { campaignId: state.campaignId },
+            query: route.query,
+          }"
+        >
+          Kampagne {{ state.campaignId }}
+        </RouterLink>
+        <template v-if="homeSystemData">
+          <span aria-hidden="true">→</span>
+          <span data-testid="campaign-context-system">{{ homeSystemData.displayNameKey }}</span>
+        </template>
+        <template v-if="selectedObject">
+          <span aria-hidden="true">→</span>
+          <span data-testid="campaign-context-object">{{ selectedObject.displayNameKey }}</span>
+        </template>
+      </nav>
 
       <nav class="campaign__nav" aria-label="Kampagnennavigation" data-testid="campaign-nav">
         <h2>Reich</h2>
@@ -169,6 +267,14 @@ function closeDetail(): void {
 .campaign__facts dd {
   margin: 0;
   font-weight: 600;
+}
+
+.campaign__context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.9rem;
 }
 
 .campaign__nav ul {

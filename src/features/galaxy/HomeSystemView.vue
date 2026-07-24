@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// Feature: GAL-CLIENT-A1-NAV-001
 // Feature: GAL-GALAXY-HOME-VIEW-001
 // Fachlicher Vertrag: docs/contracts/rest-api/galaxis-rest-v1-a1.yaml (/systems/{systemId})
 // Designentscheidung: docs/decisions/0007-client-ui-rendering-und-lokalisierung.md
@@ -17,6 +18,8 @@ import type { SystemScene, SystemSceneFactory } from './rendering/systemScene'
 const props = defineProps<{
   /** Linkrelation `galaxy` aus dem Kampagnenzustand; der Client baut die URL nicht selbst. */
   galaxyLink: string
+  /** Optionaler Systemkontext aus dem Deep Link; er wird gegen die bekannte Galaxie geprüft. */
+  systemId?: string
   /** Injizierbare Szenenfabrik; ohne Angabe wird die Three.js-Schicht erst zur Laufzeit geladen. */
   sceneFactory?: SystemSceneFactory
 }>()
@@ -54,13 +57,27 @@ async function ensureScene(): Promise<void> {
 }
 
 async function load(): Promise<void> {
-  await store.loadFromGalaxy(props.galaxyLink)
+  await store.loadFromGalaxy(props.galaxyLink, props.systemId)
   // Auswahl aus der URL erst nach dem Laden anwenden; unbekannte IDs verwirft der Store.
   const fromUrl = route.query.object
   if (typeof fromUrl === 'string') store.select(fromUrl)
 }
 
 onMounted(load)
+
+watch(
+  () => [props.galaxyLink, props.systemId],
+  ([galaxyLink, systemId], previous) => {
+    if (previous && (galaxyLink !== previous[0] || systemId !== previous[1])) void load()
+  },
+)
+
+watch(
+  () => route.query.object,
+  (objectId) => {
+    if (status.value === 'ready') store.select(typeof objectId === 'string' ? objectId : null)
+  },
+)
 
 watch(status, async (value) => {
   if (value === 'ready') {
@@ -98,6 +115,14 @@ onBeforeUnmount(() => {
       @retry="load()"
     />
 
+    <div v-else-if="status === 'empty'" class="home-system__empty" data-testid="home-system-empty">
+      <h2>System nicht verfügbar</h2>
+      <p>Dieses Sternensystem ist nicht sichtbar oder enthält noch keine bekannten Daten.</p>
+      <RouterLink :to="{ name: 'campaign', params: { campaignId: route.params.campaignId } }">
+        Zur Kampagnenansicht
+      </RouterLink>
+    </div>
+
     <div v-else-if="status === 'ready'" class="home-system__body">
       <div class="home-system__scene" data-testid="home-system-scene">
         <canvas ref="canvasRef" class="home-system__canvas" aria-hidden="true"></canvas>
@@ -105,7 +130,11 @@ onBeforeUnmount(() => {
 
       <aside class="home-system__panel">
         <h2 id="home-system-objects-heading">Bekannte Objekte</h2>
+        <p v-if="objects.length === 0" data-testid="home-system-no-objects">
+          Keine bekannten Objekte in diesem Sternensystem.
+        </p>
         <ul
+          v-else
           class="home-system__objects"
           role="listbox"
           aria-labelledby="home-system-objects-heading"
@@ -166,6 +195,19 @@ onBeforeUnmount(() => {
   grid-template-columns: 1fr minmax(16rem, 22rem);
   gap: 1rem;
   min-height: 24rem;
+}
+
+.home-system__empty {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border, #3a3f55);
+  border-radius: 0.5rem;
+}
+
+.home-system__empty h2,
+.home-system__empty p {
+  margin: 0;
 }
 
 @media (max-width: 48rem) {
