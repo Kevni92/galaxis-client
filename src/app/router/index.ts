@@ -9,6 +9,19 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/HomeView.vue'),
   },
   {
+    path: '/campaigns',
+    name: 'campaigns',
+    // Kampagnenliste und -erstellung; nur nach bestätigter Session erreichbar.
+    meta: { requiresAuth: true },
+    component: () => import('@/features/campaign/CampaignListView.vue'),
+  },
+  {
+    path: '/campaigns/:campaignId',
+    name: 'campaign',
+    meta: { requiresAuth: true },
+    component: () => import('@/features/campaign/CampaignView.vue'),
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/features/auth/AuthView.vue'),
