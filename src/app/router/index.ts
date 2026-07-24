@@ -4,7 +4,14 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'home',
+    // Geschützte Startseite: erst nach serverseitig bestätigter Session erreichbar.
+    meta: { requiresAuth: true },
     component: () => import('@/views/HomeView.vue'),
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/features/auth/AuthView.vue'),
   },
   {
     // Auffangroute; verhindert leere Ansichten bei unbekannten Pfaden.
