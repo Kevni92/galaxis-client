@@ -55,7 +55,8 @@ Die API-Basis-URL ist konfigurierbar über `VITE_API_BASE_URL`
 ```bash
 cp .env.example .env
 # VITE_API_BASE_URL leer lassen → server-relative Aufrufe (OpenAPI: servers "/")
-# oder z. B. VITE_API_BASE_URL=http://localhost:3000 für einen separaten Server
+# Der Vite-Devserver proxyt /health und /api standardmäßig nach
+# http://127.0.0.1:3000; Ziel bei Bedarf über VITE_DEV_API_PROXY_TARGET ändern.
 ```
 
 ## Projektstruktur

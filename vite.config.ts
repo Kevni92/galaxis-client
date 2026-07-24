@@ -1,11 +1,11 @@
 import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-// Nur für den A0-E2E-Smoke gegen den echten Server gesetzt (scripts/run-e2e-a0.mjs):
-// leitet gleichen-Origin-Aufrufe unter /api an den lokal laufenden Server weiter, damit der
-// Bearer-Client (server-relative Basis-URL) ohne CORS-Konfiguration gegen ihn läuft.
-const e2eApiProxyTarget = process.env.VITE_E2E_API_PROXY_TARGET
+const env = loadEnv('development', process.cwd(), '')
+const devApiProxyTarget = env.VITE_DEV_API_PROXY_TARGET || 'http://127.0.0.1:3000'
+// Der A0-E2E-Smoke setzt dieses Ziel explizit (scripts/run-e2e-a0.mjs).
+const previewApiProxyTarget = process.env.VITE_E2E_API_PROXY_TARGET ?? env.VITE_E2E_API_PROXY_TARGET
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -17,10 +17,19 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    proxy: {
+      '/health': { target: devApiProxyTarget, changeOrigin: true },
+      '/api': { target: devApiProxyTarget, changeOrigin: true },
+    },
   },
   preview: {
-    ...(e2eApiProxyTarget
-      ? { proxy: { '/api': { target: e2eApiProxyTarget, changeOrigin: true } } }
+    ...(previewApiProxyTarget
+      ? {
+          proxy: {
+            '/health': { target: previewApiProxyTarget, changeOrigin: true },
+            '/api': { target: previewApiProxyTarget, changeOrigin: true },
+          },
+        }
       : {}),
   },
 })
