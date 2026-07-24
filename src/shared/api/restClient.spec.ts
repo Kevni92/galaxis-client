@@ -108,6 +108,34 @@ describe('createRestClient', () => {
     expect(result).toMatchObject({ id: 'sys_12', displayName: 'Tau Ceti', futureField: 7 })
   })
 
+  it('liefert über getDetailed den ETag und den Status der Antwort', async () => {
+    const { fetch } = mockFetch(
+      jsonResponse(
+        200,
+        { campaignId: 'cmp_1', stateVersion: 3 },
+        { headers: { ETag: 'W/"state-3"' } },
+      ),
+    )
+    const client = createRestClient({ baseUrl: '', fetch })
+
+    const result = await client.getDetailed<{ campaignId: string; stateVersion: number }>(
+      '/api/v1/campaigns/cmp_1/state',
+    )
+
+    expect(result.data).toEqual({ campaignId: 'cmp_1', stateVersion: 3 })
+    expect(result.etag).toBe('W/"state-3"')
+    expect(result.status).toBe(200)
+  })
+
+  it('lässt den ETag über getDetailed weg, wenn der Server keinen liefert', async () => {
+    const { fetch } = mockFetch(jsonResponse(200, { campaignId: 'cmp_1' }))
+    const client = createRestClient({ baseUrl: '', fetch })
+
+    const result = await client.getDetailed('/api/v1/campaigns/cmp_1/state')
+
+    expect(result.etag).toBeUndefined()
+  })
+
   it('übersetzt das Vertrags-Fehlerformat zentral in einen ApiError', async () => {
     const errorBody: ServerErrorResponse = {
       error: {

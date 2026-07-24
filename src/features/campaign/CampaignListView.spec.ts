@@ -40,6 +40,7 @@ function mockApi(overrides: Partial<CampaignApi> = {}): CampaignApi {
   return {
     list: vi.fn(async () => ({ campaigns: [] })),
     create: vi.fn(async () => campaign()),
+    getState: vi.fn(async () => ({ state: campaign() as never, etag: undefined })),
     ...overrides,
   }
 }

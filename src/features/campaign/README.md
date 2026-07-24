@@ -1,22 +1,24 @@
-# features/campaign – Kampagnenliste und Kampagnenerstellung
+# features/campaign – Kampagnenliste, Erstellung und Zustandsbootstrap
 
-Feature-ID: `GAL-CAMPAIGN-CREATE-001`
+Feature-IDs: `GAL-CAMPAIGN-CREATE-001` (Liste/Erstellung), `GAL-API-A1-STATE-001` (Kampagnen-App-Shell und Zustandsbootstrap)
 
-Auflisten der für den Account sichtbaren Kampagnen und Erstellen einer neuen A1-Singleplayer-Kampagne.
-Der Server ist autoritativ: Status, Zeitprofil, Balancing- und Zustandsversion werden unverändert
-übernommen; der Client erfindet keine lokalen Defaultregeln. Ein Idempotenzschlüssel pro fachlichem
-Erstellversuch verhindert Doppelanlagen. Der kompakte Kampagnenzustand und die Game-Shell-Navigation
-folgen in Issue #8 (`GAL-API-A1-STATE-001`).
+Auflisten der für den Account sichtbaren Kampagnen, Erstellen einer neuen A1-Singleplayer-Kampagne
+und Laden des kompakten Kampagnenzustands der ausgewählten Kampagne. Der Server ist autoritativ:
+Status, Zeitprofil, Balancing- und Zustandsversion werden unverändert übernommen; unbekannte
+Zusatzfelder stören nicht, und der Client erfindet keine lokalen Defaultregeln. Ein Idempotenzschlüssel
+pro fachlichem Erstellversuch verhindert Doppelanlagen. Detailressourcen folgen den serverseitigen
+Linkrelationen statt selbst gebauter URLs.
 
-| Datei                    | Verantwortung                                                                       | Fachliche Quelle                                                                                                             |
-| ------------------------ | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `campaignApi.ts`         | Wrapper um `GET`/`POST /api/v1/campaigns` auf dem zentralen Client                  | [`docs/contracts/rest-api/galaxis-rest-v1-a1.yaml`](../../../docs/contracts/rest-api/galaxis-rest-v1-a1.yaml) (`/campaigns`) |
-| `campaignStore.ts`       | Pinia-Store: Liste laden, Kampagne erstellen, Lade- und Fehlerzustände              | dito                                                                                                                         |
-| `campaignError.ts`       | Übersetzt Serverfehler in allgemeine und feldbezogene Formularmeldungen             | dito (`Error`, `InvalidCampaign`)                                                                                            |
-| `idempotency.ts`         | Erzeugt den Idempotenzschlüssel pro Erstellversuch                                  | dito (Parameter `Idempotency-Key`)                                                                                           |
-| `CreateCampaignForm.vue` | Formular für Seed und Zeitprofil inkl. Schlüssel-Lebenszyklus und Doppelklickschutz | dito                                                                                                                         |
-| `CampaignListView.vue`   | Kampagnenliste, Erstelldialog und Weiterleitung zur Übersicht (`/campaigns`)        | dito                                                                                                                         |
-| `CampaignView.vue`       | Minimale Kampagnenübersicht als Weiterleitungsziel; Zustand folgt in Issue #8       | dito (`/campaigns/{campaignId}`)                                                                                             |
+| Datei                    | Verantwortung                                                                           | Fachliche Quelle                                                                                                             |
+| ------------------------ | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `campaignApi.ts`         | Wrapper um `GET`/`POST /api/v1/campaigns` und `GET .../state` (mit ETag) auf dem Client | [`docs/contracts/rest-api/galaxis-rest-v1-a1.yaml`](../../../docs/contracts/rest-api/galaxis-rest-v1-a1.yaml) (`/campaigns`) |
+| `campaignStore.ts`       | Pinia-Store: Liste laden, Kampagne erstellen, Lade- und Fehlerzustände                  | dito                                                                                                                         |
+| `campaignStateStore.ts`  | Pinia-Store: kompakten Kampagnenzustand nach ID laden, `stateVersion`/ETag/Links merken | dito (`/campaigns/{campaignId}/state`)                                                                                       |
+| `campaignError.ts`       | Übersetzt Serverfehler in allgemeine und feldbezogene Formularmeldungen                 | dito (`Error`, `InvalidCampaign`)                                                                                            |
+| `idempotency.ts`         | Erzeugt den Idempotenzschlüssel pro Erstellversuch                                      | dito (Parameter `Idempotency-Key`)                                                                                           |
+| `CreateCampaignForm.vue` | Formular für Seed und Zeitprofil inkl. Schlüssel-Lebenszyklus und Doppelklickschutz     | dito                                                                                                                         |
+| `CampaignListView.vue`   | Kampagnenliste, Erstelldialog und Weiterleitung zur Übersicht (`/campaigns`)            | dito                                                                                                                         |
+| `CampaignView.vue`       | Kampagnen-App-Shell: lädt den Zustand und stellt Navigation über Linkrelationen bereit  | dito (`/campaigns/{campaignId}`)                                                                                             |
 
 ## Idempotenz und Doppelabsenden
 
@@ -25,14 +27,26 @@ folgen in Issue #8 (`GAL-API-A1-STATE-001`).
   (kein Konflikt mit alten Daten).
 - Zusätzlich sperrt der Ladezustand ein Doppelabsenden, sodass ein Doppelklick nur einen Request auslöst.
 
+## Zustandsbootstrap
+
+- `campaignStateStore.loadState(id)` markiert den Zustand erst nach der Serverantwort als geladen
+  und speichert `stateVersion` und ETag der reichsspezifischen Sicht.
+- Ein Kampagnenwechsel verwirft zuerst den alten Zustand, damit keine fremden Daten sichtbar bleiben.
+- Fehlender Zugriff (`404`/`403`) wird als neutrale Serverfehlermeldung dargestellt, ohne interne
+  Details oder die Existenz fremder Kampagnen zu verraten.
+- Die `links`-Relationen (`galaxy`, `colonies`, `population`, `economy`) bilden die Grundlage der
+  weiteren A1-Navigation; die 3D-Systemansicht (#9) und modale Detailfenster (#10) hängen sich hier an.
+
 ## Abhängigkeiten
 
-- [`shared/api`](../../shared/api/README.md) für den REST-Client, `ApiError`/`UiError` und `toUiError`.
+- [`shared/api`](../../shared/api/README.md) für den REST-Client (inkl. `getDetailed`/`ApiResponse`),
+  `ApiError`/`UiError` und `toUiError`.
 - [`shared/ui`](../../shared/ui/README.md) für `ErrorNotice`.
-- `pinia` für den Store, `vue-router` für die Weiterleitung.
+- `pinia` für die Stores, `vue-router` für Weiterleitung und Deep Links.
 
 ## Verdrahtung
 
-`main.ts` bindet die `CampaignApi` über `useApi` an den Store. Die Routen `/campaigns`
-(Liste/Erstellen) und `/campaigns/:campaignId` (Übersicht) tragen `meta.requiresAuth`; die
-Hauptnavigation der App-Shell verlinkt die Kampagnen nur im angemeldeten Zustand.
+`main.ts` erzeugt die `CampaignApi` einmal und bindet sie über `useApi` an `campaignStore` und
+`campaignStateStore`. Die Routen `/campaigns` (Liste/Erstellen) und `/campaigns/:campaignId`
+(App-Shell) tragen `meta.requiresAuth`; die Hauptnavigation der App-Shell verlinkt die Kampagnen
+nur im angemeldeten Zustand.

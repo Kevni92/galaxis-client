@@ -9,16 +9,16 @@ Maßgebliche Quelle: [`docs/contracts/rest-api/galaxis-rest-v1.md`](../../../doc
 
 ## Struktur
 
-| Datei/Modul      | Verantwortung                                                                    | Fachliche Quelle                                   |
-| ---------------- | -------------------------------------------------------------------------------- | -------------------------------------------------- |
-| `restClient.ts`  | Zentrale Fetch-Abstraktion: Header, Timeout, Abbruch, Fehlerübersetzung          | `galaxis-rest-v1.md` (Anforderungen an Client)     |
-| `apiError.ts`    | Übersetzt Vertrags-Fehlerformat und Transportfehler in `ApiError` / `UiError`    | `galaxis-rest-v1.md` (Fehlerformat, Statuscodes)   |
-| `retry.ts`       | Wiederholt nur sichere Abfragen (GET); Befehle werden nie automatisch dupliziert | `galaxis-rest-v1.md` (Anforderungen an Client)     |
-| `session.ts`     | `SessionProvider` für den Bearer-Header (Quelle austauschbar)                    | `galaxis-rest-v1.md` (Authentifizierung)           |
-| `correlation.ts` | Erzeugt Request-Korrelationskennungen                                            | `galaxis-rest-v1.md` (correlationId)               |
-| `contract.ts`    | Kanonische Re-Exports der generierten Vertragstypen                              | `galaxis-rest-v1.yaml` + `galaxis-rest-v1-a1.yaml` |
-| `generated/`     | Aus OpenAPI generierte Typen (nicht manuell bearbeiten)                          | siehe [`generated/README.md`](generated/README.md) |
-| `index.ts`       | Öffentliche Schnittstelle der Schicht                                            | –                                                  |
+| Datei/Modul      | Verantwortung                                                                                                           | Fachliche Quelle                                   |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `restClient.ts`  | Zentrale Fetch-Abstraktion: Header, Timeout, Abbruch, Fehlerübersetzung; `getDetailed` liefert zusätzlich `ETag`/Status | `galaxis-rest-v1.md` (Anforderungen an Client)     |
+| `apiError.ts`    | Übersetzt Vertrags-Fehlerformat und Transportfehler in `ApiError` / `UiError`                                           | `galaxis-rest-v1.md` (Fehlerformat, Statuscodes)   |
+| `retry.ts`       | Wiederholt nur sichere Abfragen (GET); Befehle werden nie automatisch dupliziert                                        | `galaxis-rest-v1.md` (Anforderungen an Client)     |
+| `session.ts`     | `SessionProvider` für den Bearer-Header (Quelle austauschbar)                                                           | `galaxis-rest-v1.md` (Authentifizierung)           |
+| `correlation.ts` | Erzeugt Request-Korrelationskennungen                                                                                   | `galaxis-rest-v1.md` (correlationId)               |
+| `contract.ts`    | Kanonische Re-Exports der generierten Vertragstypen                                                                     | `galaxis-rest-v1.yaml` + `galaxis-rest-v1-a1.yaml` |
+| `generated/`     | Aus OpenAPI generierte Typen (nicht manuell bearbeiten)                                                                 | siehe [`generated/README.md`](generated/README.md) |
+| `index.ts`       | Öffentliche Schnittstelle der Schicht                                                                                   | –                                                  |
 
 ## Verwendung
 

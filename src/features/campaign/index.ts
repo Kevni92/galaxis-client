@@ -6,10 +6,14 @@ export type {
   CampaignApi,
   CampaignResponse,
   CampaignListResponse,
+  CampaignStateResponse,
+  CampaignStateResult,
   CreateCampaignRequest,
 } from './campaignApi'
 export { useCampaignStore } from './campaignStore'
 export type { CampaignStore, CampaignListStatus } from './campaignStore'
+export { useCampaignStateStore } from './campaignStateStore'
+export type { CampaignStateStore, CampaignStateStatus } from './campaignStateStore'
 export { extractCampaignError } from './campaignError'
 export type { CampaignFormError } from './campaignError'
 export { createIdempotencyKey } from './idempotency'
