@@ -20,10 +20,17 @@ import {
   WebGLRenderer,
 } from 'three'
 import type { SceneObject, SystemScene, SystemSceneFactory } from './systemScene'
+import { bodyRadius, viewRadiusFor } from './framing'
 
-const STAR_RADIUS = 3
-const PLANET_RADIUS = 1.6
-const MIN_VIEW_RADIUS = 20
+const HIGHLIGHT_SCALE = 1.35
+
+/** Gemerkter Ausgangszustand je Körper, um Hervorhebungen verlustfrei zurücknehmen zu können. */
+interface MeshUserData {
+  id: string
+  baseEmissiveColor: Color
+  baseEmissiveIntensity: number
+  baseScale: number
+}
 
 /** Leitet aus dem präsentationalen Renderhinweis eine stabile Farbe ab (kein fachlicher Wert). */
 function colorFor(object: SceneObject): Color {
@@ -64,17 +71,17 @@ export const createThreeSystemScene: SystemSceneFactory = (
   const animate = !prefersReducedMotion()
 
   function frameCamera(objects: readonly SceneObject[]): void {
-    let radius = MIN_VIEW_RADIUS
-    for (const o of objects) radius = Math.max(radius, Math.hypot(o.x, o.y) + 8)
-    const distance = radius * 2.4
+    const distance = viewRadiusFor(objects) * 2.4
     camera.position.set(0, distance * 0.7, distance)
     camera.lookAt(0, 0, 0)
   }
 
   function applyHighlight(mesh: Mesh<SphereGeometry, MeshStandardMaterial>, on: boolean): void {
-    mesh.material.emissive = on ? new Color('#4f7cff') : new Color('#000000')
-    mesh.material.emissiveIntensity = on ? 0.9 : mesh.userData.baseEmissive
-    mesh.scale.setScalar(on ? 1.35 : 1)
+    const base = mesh.userData as MeshUserData
+    // Beim Aufheben den gemerkten Ausgangszustand wiederherstellen (u. a. der Sterneigenglanz).
+    mesh.material.emissive = on ? new Color('#4f7cff') : base.baseEmissiveColor.clone()
+    mesh.material.emissiveIntensity = on ? 0.9 : base.baseEmissiveIntensity
+    mesh.scale.setScalar(on ? base.baseScale * HIGHLIGHT_SCALE : base.baseScale)
   }
 
   function clearMeshes(): void {
@@ -87,14 +94,22 @@ export const createThreeSystemScene: SystemSceneFactory = (
 
   function setObjects(objects: readonly SceneObject[]): void {
     clearMeshes()
+    // Körpergröße relativ zur Systemausdehnung, damit weit außen liegende Planeten sichtbar bleiben.
+    const viewRadius = viewRadiusFor(objects)
     for (const object of objects) {
       const material = new MeshStandardMaterial({ color: colorFor(object) })
       const mesh = new Mesh(geometry, material)
       const isStar = object.kind === 'star'
       material.emissiveIntensity = isStar ? 0.6 : 0.1
       material.emissive = isStar ? new Color('#ffb020') : new Color('#000000')
-      mesh.userData = { id: object.id, baseEmissive: material.emissiveIntensity }
-      mesh.scale.setScalar(isStar ? STAR_RADIUS : PLANET_RADIUS)
+      const scale = bodyRadius(object.kind, viewRadius)
+      mesh.userData = {
+        id: object.id,
+        baseEmissiveColor: material.emissive.clone(),
+        baseEmissiveIntensity: material.emissiveIntensity,
+        baseScale: scale,
+      } satisfies MeshUserData
+      mesh.scale.setScalar(scale)
       // Fachliche XY-Ebene → horizontale XZ-Ebene; die visuelle Höhe (Y) bleibt 0 (präsentational).
       mesh.position.set(object.x, 0, object.y)
       group.add(mesh)
