@@ -8,6 +8,6 @@ exports[`CampaignView > entspricht dem erwarteten Mock-Snapshot des geladenen Zu
     <li data-v-8d2c146c="" data-testid="nav-population">Bevölkerung</li>
     <li data-v-8d2c146c="" data-testid="nav-economy">Grundversorgung</li>
   </ul>
-  <p data-v-8d2c146c="" class="campaign__hint"> Die modalen Kolonie- und Planetdetails folgen im nächsten A1-Schritt. </p>
+  <p data-v-8d2c146c="" class="campaign__hint"> Wähle den Heimatplaneten in der Systemansicht, um das modale Kolonie- und Planetdetail zu öffnen. </p>
 </nav>"
 `;
