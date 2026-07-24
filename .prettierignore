@@ -1,0 +1,11 @@
+dist
+dist-ssr
+coverage
+playwright-report
+test-results
+pnpm-lock.yaml
+docs
+
+# Repository-Governance-Dateien (nicht durch den Client-Formatter verwaltet)
+AGENTS.md
+CLAUDE.md
