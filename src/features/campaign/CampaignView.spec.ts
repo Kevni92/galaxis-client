@@ -56,7 +56,10 @@ async function mountAt(campaignId: string, api: CampaignApi) {
   useCampaignStateStore().useApi(api)
   router.push(`/campaigns/${campaignId}`)
   await router.isReady()
-  const wrapper = mount(CampaignView, { global: { plugins: [router] } })
+  const wrapper = mount(CampaignView, {
+    // Die eingebettete 3D-Systemansicht wird gestubbt; sie hat eigene Tests und lädt sonst Three.js.
+    global: { plugins: [router], stubs: { HomeSystemView: true } },
+  })
   await flushPromises()
   return { wrapper, router }
 }
@@ -73,7 +76,8 @@ describe('CampaignView', () => {
     expect(wrapper.get('[data-testid="campaign-view-status"]').text()).toBe('running')
     expect(wrapper.get('[data-testid="campaign-view-state-version"]').text()).toBe('1')
     expect(wrapper.get('[data-testid="campaign-view-empire"]').text()).toBe('Startreich')
-    expect(wrapper.find('[data-testid="nav-galaxy"]').exists()).toBe(true)
+    // Die bekannte 3D-Heimatsystemansicht ist als Arbeitsfläche eingebettet (per Linkrelation).
+    expect(wrapper.find('[data-testid="campaign-home-system"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="nav-colonies"]').exists()).toBe(true)
   })
 

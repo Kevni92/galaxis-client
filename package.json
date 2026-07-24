@@ -25,12 +25,14 @@
   },
   "dependencies": {
     "pinia": "4.0.2",
+    "three": "0.185.1",
     "vue": "3.5.40",
     "vue-router": "5.2.0"
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",
     "@types/node": "26.1.1",
+    "@types/three": "0.185.1",
     "@vitejs/plugin-vue": "6.0.8",
     "@vue/eslint-config-prettier": "10.2.0",
     "@vue/eslint-config-typescript": "14.9.0",
