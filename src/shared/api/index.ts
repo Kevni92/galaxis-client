@@ -7,6 +7,7 @@ export type {
   RestClient,
   RestClientOptions,
   RequestOptions,
+  ApiResponse,
   HttpMethod,
   QueryValue,
 } from './restClient'

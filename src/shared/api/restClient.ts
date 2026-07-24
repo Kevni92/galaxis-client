@@ -44,6 +44,14 @@ export interface RestClientOptions {
   correlationHeader?: string
 }
 
+/** Antwort samt Metadaten. `etag` und `status` erlauben ETag-/Zustandsversionsverarbeitung. */
+export interface ApiResponse<TData> {
+  data: TData
+  /** Schwacher ETag des sichtbaren Zustands, falls der Server ihn liefert. */
+  etag?: string
+  status: number
+}
+
 /**
  * Zentrale Fetch-Abstraktion. Jede REST-Nutzung im Client läuft über diesen Client,
  * damit keine Komponente `fetch` direkt aufruft. Der Client setzt Korrelations- und
@@ -52,10 +60,17 @@ export interface RestClientOptions {
  */
 export interface RestClient {
   request<TResponse>(options: RequestOptions): Promise<TResponse>
+  /** Wie `request`, liefert zusätzlich Metadaten (z. B. `ETag`) für Zustandsressourcen. */
+  requestDetailed<TResponse>(options: RequestOptions): Promise<ApiResponse<TResponse>>
   get<TResponse>(
     path: string,
     options?: Omit<RequestOptions, 'path' | 'method' | 'body'>,
   ): Promise<TResponse>
+  /** GET mit Metadaten; für Ressourcen mit `ETag`/Zustandsversion. */
+  getDetailed<TResponse>(
+    path: string,
+    options?: Omit<RequestOptions, 'path' | 'method' | 'body'>,
+  ): Promise<ApiResponse<TResponse>>
   post<TResponse>(
     path: string,
     body?: unknown,
@@ -99,7 +114,9 @@ export function createRestClient(options: RestClientOptions = {}): RestClient {
   const nextCorrelationId = options.correlationIdFactory ?? createCorrelationId
   const correlationHeader = options.correlationHeader ?? DEFAULT_CORRELATION_HEADER
 
-  async function request<TResponse>(req: RequestOptions): Promise<TResponse> {
+  async function performRequest(
+    req: RequestOptions,
+  ): Promise<{ data: unknown; response: Response }> {
     const correlationId = nextCorrelationId()
     const method = req.method ?? 'GET'
     const url = buildUrl(baseUrl, req.path, req.query)
@@ -147,7 +164,7 @@ export function createRestClient(options: RestClientOptions = {}): RestClient {
       if (!response.ok) {
         throw apiErrorFromResponse(response.status, await parseJson(response), correlationId)
       }
-      return (await parseJson(response)) as TResponse
+      return { data: await parseJson(response), response }
     } catch (cause) {
       if (cause instanceof ApiError) throw cause
       if (isAbort(cause)) {
@@ -160,9 +177,24 @@ export function createRestClient(options: RestClientOptions = {}): RestClient {
     }
   }
 
+  async function request<TResponse>(req: RequestOptions): Promise<TResponse> {
+    return (await performRequest(req)).data as TResponse
+  }
+
+  async function requestDetailed<TResponse>(req: RequestOptions): Promise<ApiResponse<TResponse>> {
+    const { data, response } = await performRequest(req)
+    return {
+      data: data as TResponse,
+      etag: response.headers.get('ETag') ?? undefined,
+      status: response.status,
+    }
+  }
+
   return {
     request,
+    requestDetailed,
     get: (path, opts) => request({ ...opts, path, method: 'GET' }),
+    getDetailed: (path, opts) => requestDetailed({ ...opts, path, method: 'GET' }),
     post: (path, body, opts) => request({ ...opts, path, method: 'POST', body }),
     del: (path, opts) => request({ ...opts, path, method: 'DELETE' }),
   }

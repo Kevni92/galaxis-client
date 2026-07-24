@@ -16,11 +16,16 @@ const campaign = {
 }
 
 /** Minimaler REST-Client-Mock, der nur die von der Kampagnen-API genutzten Methoden protokolliert. */
-function mockClient(result: unknown) {
+function mockClient(result: unknown, detailed?: { data: unknown; etag?: string; status?: number }) {
   const get = vi.fn(async () => result)
   const post = vi.fn(async () => result)
-  const client = { get, post } as unknown as RestClient
-  return { client, get, post }
+  const getDetailed = vi.fn(async () => ({
+    data: detailed?.data ?? result,
+    etag: detailed?.etag,
+    status: detailed?.status ?? 200,
+  }))
+  const client = { get, post, getDetailed } as unknown as RestClient
+  return { client, get, post, getDetailed }
 }
 
 describe('createCampaignApi', () => {
@@ -47,5 +52,15 @@ describe('createCampaignApi', () => {
       { headers: { 'Idempotency-Key': 'idk_abc' } },
     )
     expect(result).toEqual(campaign)
+  })
+
+  it('lädt den Zustand über GET /api/v1/campaigns/{id}/state samt ETag', async () => {
+    const state = { campaignId: 'cmp 1', stateVersion: 2 }
+    const { client, getDetailed } = mockClient(null, { data: state, etag: 'W/"state-2"' })
+
+    const result = await createCampaignApi(client).getState('cmp 1')
+
+    expect(getDetailed).toHaveBeenCalledWith('/api/v1/campaigns/cmp%201/state')
+    expect(result).toEqual({ state, etag: 'W/"state-2"' })
   })
 })
