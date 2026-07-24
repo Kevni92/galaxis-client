@@ -23,6 +23,9 @@ async function onLogout(): Promise<void> {
       <span class="app-shell__brand">Galaxis</span>
       <nav class="app-shell__nav" aria-label="Hauptnavigation">
         <RouterLink to="/">Start</RouterLink>
+        <RouterLink v-if="session.isAuthenticated" :to="{ name: 'campaigns' }"
+          >Kampagnen</RouterLink
+        >
       </nav>
       <div class="app-shell__account">
         <template v-if="session.isAuthenticated">

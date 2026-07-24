@@ -13,6 +13,7 @@ import {
   useSessionStore,
 } from '@/features/auth'
 import { createHealthApi, HEALTH_API_KEY, useConnectionStore } from '@/features/connection'
+import { createCampaignApi, useCampaignStore } from '@/features/campaign'
 
 const app = createApp(App)
 
@@ -29,6 +30,7 @@ const session = useSessionStore()
 const restClient = createRestClient({ session: session.sessionProvider })
 session.useApi(createSessionApi(restClient))
 useAccountStore().useApi(createAccountApi(restClient))
+useCampaignStore().useApi(createCampaignApi(restClient))
 
 // Verbindungszustand aus den technischen Health-Endpunkten ableiten; die Health-API steht der
 // Entwicklungsanzeige zusätzlich per Bereitstellung zur Verfügung.
