@@ -5,7 +5,13 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './app/router'
 import { createRestClient } from '@/shared/api'
-import { createSessionApi, createSessionGuard, useSessionStore } from '@/features/auth'
+import {
+  createAccountApi,
+  createSessionApi,
+  createSessionGuard,
+  useAccountStore,
+  useSessionStore,
+} from '@/features/auth'
 
 const app = createApp(App)
 
@@ -21,8 +27,15 @@ app.use(createPinia())
 const session = useSessionStore()
 const restClient = createRestClient({ session: session.sessionProvider })
 session.useApi(createSessionApi(restClient))
+useAccountStore().useApi(createAccountApi(restClient))
 
-router.beforeEach(createSessionGuard(session))
+// Nicht angemeldete Zugriffe auf geschützte Routen landen auf der Anmeldemaske;
+// der ursprüngliche Pfad wird als `redirect`-Query mitgegeben.
+router.beforeEach(
+  createSessionGuard(session, {
+    redirectTo: (to) => ({ name: 'login', query: { redirect: to.fullPath } }),
+  }),
+)
 app.use(router)
 
 // Startprüfung anstoßen; der Guard wartet bei geschützten Routen auf das Ergebnis.
