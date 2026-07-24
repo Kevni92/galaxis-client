@@ -1,0 +1,149 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality and Playwright smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository and docs
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Make pinned pnpm available for cache setup
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.4.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Enable Corepack and install pinned pnpm
+        run: |
+          corepack enable
+          corepack install
+          pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+      - name: Build
+        run: pnpm build
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Playwright smoke (gemockte API)
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
+
+  e2e-a0:
+    name: A0 End-to-End-Smoke gegen echten Server
+    needs: quality
+    # Teststrategie (docs/TESTING.md, "Nach Merge auf main"): der echte Server-E2E läuft nach
+    # dem Merge und manuell, nicht bei jedem PR, damit das PR-Zielzeitfenster eingehalten wird.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out client
+        uses: actions/checkout@v4
+        with:
+          path: client
+          submodules: recursive
+
+      - name: Check out server
+        uses: actions/checkout@v4
+        with:
+          repository: Kevni92/galaxis-server
+          path: server
+
+      - name: Make pinned pnpm available for cache setup
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.4.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: client/.node-version
+          cache: pnpm
+          cache-dependency-path: |
+            client/pnpm-lock.yaml
+            server/pnpm-lock.yaml
+
+      - name: Install server dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: server
+
+      - name: Install client dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: client
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+        working-directory: client
+
+      - name: Run A0 End-to-End-Smoke
+        run: node scripts/run-e2e-a0.mjs
+        working-directory: client
+        env:
+          GALAXIS_SERVER_DIR: ${{ github.workspace }}/server
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-a0
+          path: client/playwright-report-a0/
+          if-no-files-found: ignore
+
+      - name: Upload server log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-a0-log
+          path: client/test-results-a0/server-a0.log
+          if-no-files-found: ignore
