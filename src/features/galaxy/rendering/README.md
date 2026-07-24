@@ -11,6 +11,7 @@ eigene Spielsimulation; visuelle Höhe, Größe und Animation sind rein präsent
 | --------------------- | ------------------------------------------------------------------------------- |
 | `systemScene.ts`      | `SystemScene`-Interface, `SceneObject` und `SystemSceneFactory` (Three.js-frei) |
 | `threeSystemScene.ts` | Three.js-Implementierung; einzige Datei, die Three.js importiert                |
+| `framing.ts`          | Reine Rahmungs-/Größenmathematik (Sichtradius, Körpergröße); Three.js-frei      |
 
 ## Grenze und Testbarkeit
 
@@ -19,3 +20,6 @@ eigene Spielsimulation; visuelle Höhe, Größe und Animation sind rein präsent
   `threeSystemScene.ts` per dynamischem Import (eigener Chunk, nicht im Startbundle).
 - Die fachliche XY-Ebene des Servers wird auf die horizontale XZ-Ebene abgebildet; die schräge
   Kamera erzeugt Tiefe. Die Y-Höhe bleibt 0 und besitzt keine fachliche Wirkung.
+- Die sichtbare Körpergröße wird in `framing.ts` aus der Systemausdehnung abgeleitet (rein
+  präsentational), damit weit außen liegende Planeten nicht als Punkte erscheinen. Diese Mathematik
+  ist Three.js-frei und wird per Unit-Test geprüft; die WebGL-Szene selbst bleibt manuell.
