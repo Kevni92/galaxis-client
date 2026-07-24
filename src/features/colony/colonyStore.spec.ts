@@ -127,6 +127,17 @@ describe('colonyStore', () => {
     expect(api.getEconomy).toHaveBeenCalledWith(ECONOMY_LINK)
   })
 
+  it('verwendet die serverseitige Heimatmarkierung bei abweichender Persistenz-ID', async () => {
+    const store = useColonyStore()
+    store.useApi(mockApi())
+    await store.loadColonies(COLONIES_LINK)
+
+    await store.selectPlanet('planet_0001_01', { homeworldEligible: true })
+
+    expect(store.selectedColony?.colonyId).toBe('col_home')
+    expect(store.detailStatus).toBe('ready')
+  })
+
   it('kennzeichnet einen bekannten Planeten ohne Kolonie als klaren leeren Zustand', async () => {
     const store = useColonyStore()
     store.useApi(mockApi())

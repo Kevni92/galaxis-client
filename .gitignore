@@ -33,6 +33,7 @@ coverage
 /blob-report/
 /playwright/.cache/
 /test-results-a0/
+/test-results-a1/
 /playwright-report-a0/
 
 # Lokale Umgebungskonfiguration (die konfigurierbare API-Basis-URL wird lokal gesetzt)

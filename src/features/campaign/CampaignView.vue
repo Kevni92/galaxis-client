@@ -70,6 +70,15 @@ function onDetailTabChange(tab: DetailTabId): void {
   replaceQuery({ ...route.query, ...detailQuery('colony', tab) })
 }
 
+function onHomeSystemReady(systemId: string): void {
+  if (currentSystemId() === systemId) return
+  void router.replace({
+    name: 'campaign-system',
+    params: { campaignId: currentCampaignId(), systemId },
+    query: route.query,
+  })
+}
+
 onMounted(() => {
   void store.loadState(currentCampaignId())
 })
@@ -79,18 +88,6 @@ watch(
   () => [route.params.campaignId, route.params.systemId],
   ([id]) => {
     if (typeof id === 'string') void store.loadState(id)
-  },
-)
-
-watch(
-  () => [homeSystemStatus.value, homeSystemData.value?.systemId, currentSystemId()],
-  ([status, systemId, requestedSystemId]) => {
-    if (status !== 'ready' || typeof systemId !== 'string' || systemId === requestedSystemId) return
-    void router.replace({
-      name: 'campaign-system',
-      params: { campaignId: currentCampaignId(), systemId },
-      query: route.query,
-    })
   },
 )
 
@@ -106,15 +103,36 @@ watch(
 // Planetenauswahl der Systemansicht in den Kolonie-Store spiegeln (Maus, Picking, Liste und URL).
 watch(
   () => selectedPlanet.value?.id ?? null,
-  (planetId) => void colony.selectPlanet(planetId),
+  (planetId) =>
+    void colony.selectPlanet(planetId, {
+      homeworldEligible: selectedPlanet.value?.homeworldEligible ?? false,
+    }),
 )
 
+// Die Shell schreibt Auswahl und Fensterzustand in einem URL-Update. Die Systemansicht bleibt damit
+// als eigenständige Komponente URL-fähig, während die Kampagnenroute keine konkurrierenden
+// router.replace-Aufrufe erzeugt.
 watch(
-  () => selectedPlanet.value?.id ?? null,
-  (planetId) => {
-    if (homeSystemStatus.value === 'ready' && planetId && rawDetailWindow.value === undefined) {
-      replaceQuery({ ...route.query, ...detailQuery('colony', detailTab.value) })
+  () => selectedObject.value?.id ?? null,
+  (objectId) => {
+    const query = { ...route.query }
+    if (objectId) {
+      query.object = objectId
+      if (selectedPlanet.value && rawDetailWindow.value === undefined) {
+        Object.assign(query, detailQuery('colony', detailTab.value))
+      } else if (
+        selectedPlanet.value &&
+        isDetailWindow(rawDetailWindow.value) &&
+        !isDetailTab(rawDetailTab.value)
+      ) {
+        query.tab = 'overview'
+      }
+    } else {
+      delete query.object
+      delete query.window
+      delete query.tab
     }
+    replaceQuery(query)
   },
 )
 
@@ -186,7 +204,9 @@ watch(
         v-if="links.galaxy"
         :galaxy-link="links.galaxy"
         :system-id="currentSystemId()"
+        :sync-url="false"
         data-testid="campaign-home-system"
+        @ready="onHomeSystemReady"
       />
 
       <ColonyDetailWindow

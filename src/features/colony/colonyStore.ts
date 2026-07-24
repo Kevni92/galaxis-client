@@ -36,6 +36,7 @@ export const useColonyStore = defineStore('colony', () => {
   const overviewError = ref<UiError | null>(null)
 
   const selectedPlanetId = ref<string | null>(null)
+  const selectedPlanetIsHomeworld = ref(false)
   const population = ref<PopulationSummaryResponse | null>(null)
   const economy = ref<EconomySummaryResponse | null>(null)
   const detailStatus = ref<ColonyDetailStatus>('idle')
@@ -45,7 +46,11 @@ export const useColonyStore = defineStore('colony', () => {
 
   /** Kolonie des aktuell gewählten Planeten; `null`, solange keine passende bekannt ist. */
   const selectedColony = computed<ColonySummary | null>(
-    () => colonies.value.find((colony) => colony.planetId === selectedPlanetId.value) ?? null,
+    () =>
+      colonies.value.find((colony) => colony.planetId === selectedPlanetId.value) ??
+      (selectedPlanetIsHomeworld.value
+        ? (colonies.value.find((colony) => colony.isHomeColony) ?? null)
+        : null),
   )
 
   function useApi(next: ColonyApi): void {
@@ -73,7 +78,11 @@ export const useColonyStore = defineStore('colony', () => {
       overviewError.value = toUiError(cause)
       overviewStatus.value = 'error'
     }
-    if (selectedPlanetId.value !== null) await selectPlanet(selectedPlanetId.value)
+    if (selectedPlanetId.value !== null) {
+      await selectPlanet(selectedPlanetId.value, {
+        homeworldEligible: selectedPlanetIsHomeworld.value,
+      })
+    }
   }
 
   async function loadDetail(colony: ColonySummary): Promise<void> {
@@ -103,8 +112,12 @@ export const useColonyStore = defineStore('colony', () => {
    * bzw. spiegelt einen Übersichtsfehler; ein bekannter Planet ohne Kolonie wird als `no-colony`
    * gekennzeichnet. Unbekannte oder `null`-Auswahl setzt das Detail zurück.
    */
-  async function selectPlanet(planetId: string | null): Promise<void> {
+  async function selectPlanet(
+    planetId: string | null,
+    options: { homeworldEligible?: boolean } = {},
+  ): Promise<void> {
     selectedPlanetId.value = planetId
+    selectedPlanetIsHomeworld.value = options.homeworldEligible === true
     population.value = null
     economy.value = null
     detailError.value = null
@@ -141,6 +154,7 @@ export const useColonyStore = defineStore('colony', () => {
     overviewError,
     colonies,
     selectedPlanetId,
+    selectedPlanetIsHomeworld,
     selectedColony,
     population,
     economy,

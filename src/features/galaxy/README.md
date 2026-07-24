@@ -8,12 +8,12 @@ autoritativen lokalen XY-Positionen; der Client leitet keine Objekte, Positionen
 Wissensstände selbst ab. Die visuelle Z-Höhe, Meshgröße und Animation sind rein präsentational. Die
 Auswahl ist Clientzustand und bleibt über die URL nachvollziehbar.
 
-| Datei                | Verantwortung                                                                     | Fachliche Quelle                                                                                                                      |
-| -------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `galaxyApi.ts`       | Lädt Galaxieübersicht und System über Linkrelationen (keine selbst gebauten URLs) | [`docs/contracts/rest-api/galaxis-rest-v1-a1.yaml`](../../../docs/contracts/rest-api/galaxis-rest-v1-a1.yaml) (`/galaxy`, `/systems`) |
-| `homeSystemStore.ts` | Pinia-Store: Galaxie→Heimatsystem laden, bekannte Objekte normalisieren, Auswahl  | dito                                                                                                                                  |
-| `HomeSystemView.vue` | 3D-Szene + zugängliche Objektliste + URL-gespiegelte Auswahl und Auswahldetail    | dito + [`docs/decisions/0007-...md`](../../../docs/decisions/0007-client-ui-rendering-und-lokalisierung.md)                           |
-| `rendering/`         | Gekapselte Three.js-Schicht hinter einem framework-neutralen Interface            | siehe [`rendering/README.md`](rendering/README.md)                                                                                    |
+| Datei                | Verantwortung                                                                                      | Fachliche Quelle                                                                                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `galaxyApi.ts`       | Lädt Galaxieübersicht und System über Linkrelationen (keine selbst gebauten URLs)                  | [`docs/contracts/rest-api/galaxis-rest-v1-a1.yaml`](../../../docs/contracts/rest-api/galaxis-rest-v1-a1.yaml) (`/galaxy`, `/systems`) |
+| `homeSystemStore.ts` | Pinia-Store: Galaxie→Heimatsystem laden, bekannte Objekte samt Heimatmarker normalisieren, Auswahl | dito                                                                                                                                  |
+| `HomeSystemView.vue` | 3D-Szene + zugängliche Objektliste + URL-gespiegelte Auswahl und Auswahldetail                     | dito + [`docs/decisions/0007-...md`](../../../docs/decisions/0007-client-ui-rendering-und-lokalisierung.md)                           |
+| `rendering/`         | Gekapselte Three.js-Schicht hinter einem framework-neutralen Interface                             | siehe [`rendering/README.md`](rendering/README.md)                                                                                    |
 
 ## Datenfluss
 
@@ -28,6 +28,8 @@ Auswahl ist Clientzustand und bleibt über die URL nachvollziehbar.
 
 - Objektliste und 3D-Szene wählen dasselbe Objekt aus (Maus, Tastatur und Picking sind gleichwertig).
 - Die Auswahl wird als `?object=<id>`-Query gespiegelt und beim Laden wiederhergestellt.
+- Der serverseitige `homeworldEligible`-Marker bleibt an Planetenobjekten erhalten; die Kampagnen-
+  Shell nutzt ihn für die autoritative Heimatkolonie-Auflösung.
 - Unbekannte oder nicht mehr vorhandene IDs werden verworfen; es wird nichts geleakt.
 - Ein unbekanntes Deep-Link-System bleibt ein leerer, sicherer Zustand; 404/403 und Ladefehler
   werden als Serverfehler dargestellt.

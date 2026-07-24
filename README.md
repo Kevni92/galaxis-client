@@ -46,6 +46,7 @@ pnpm install
 | Playwright-Browser installieren (einmalig) | `pnpm test:e2e:install`             |
 | End-to-End-Smoke (gemockte API)            | `pnpm test:e2e`                     |
 | A0-End-to-End-Smoke (echter Server)        | `pnpm test:e2e:a0`                  |
+| A1-End-to-End-Smoke (echter Server)        | `pnpm test:e2e:a1`                  |
 
 ## Konfiguration
 
@@ -91,6 +92,12 @@ unter `../server` (überschreibbar über `GALAXIS_SERVER_DIR`) sowie ein laufend
 Docker-Daemon; das Skript [`scripts/run-e2e-a0.mjs`](scripts/run-e2e-a0.mjs) startet
 PostgreSQL und den Server, wartet auf dessen Bereitschaft und führt
 [`playwright.a0.config.ts`](playwright.a0.config.ts) aus.
+
+`pnpm test:e2e:a1` führt den A1-Ablauf gegen denselben echten Server aus: Registrierung,
+Anmeldung, Kampagnenerstellung, Heimatsystem, modales Heimatplanet-/Koloniedetail und
+Reload-Wiederherstellung von Auswahl und Fensterzustand. Der Lauf verwendet
+[`playwright.a1.config.ts`](playwright.a1.config.ts), einen separaten Preview-Port und
+`test-results-a1/`; Voraussetzung sind ebenfalls ein benachbartes `galaxis-server` und Docker.
 
 ## Abgrenzung (A0)
 

@@ -147,6 +147,7 @@ describe('HomeSystemView', () => {
     expect(wrapper.get('[data-testid="object-pln_home"]').text()).toContain('planet.home.name')
     // Die Szene erhält dieselben Objekte über die gekapselte Rendering-Schicht.
     expect(scene.calls.objects).toHaveLength(2)
+    expect(wrapper.emitted('ready')).toEqual([['sys_home']])
   })
 
   it('wählt über die Objektliste aus und spiegelt die Auswahl in URL und Szene', async () => {

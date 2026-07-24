@@ -101,6 +101,20 @@ describe('useHomeSystemStore', () => {
     expect(store.status).toBe('ready')
   })
 
+  it('verwendet den fertigen Systemzustand beim kanonischen Deep-Link erneut', async () => {
+    const api = mockApi()
+    const store = useHomeSystemStore()
+    store.useApi(api)
+
+    await store.loadFromGalaxy('/api/v1/campaigns/cmp_1/galaxy')
+    store.select('pln_home')
+    await store.loadFromGalaxy('/api/v1/campaigns/cmp_1/galaxy', 'sys_home')
+
+    expect(api.getGalaxy).toHaveBeenCalledTimes(1)
+    expect(api.getSystem).toHaveBeenCalledTimes(1)
+    expect(store.selectedObjectId).toBe('pln_home')
+  })
+
   it('stellt nur bekannte Objekte samt autoritativer XY-Position bereit', async () => {
     const store = useHomeSystemStore()
     store.useApi(mockApi())
@@ -125,6 +139,7 @@ describe('useHomeSystemStore', () => {
         x: 120.5,
         y: -44,
         renderKind: 'terrestrial_planet',
+        homeworldEligible: true,
       },
     ])
     expect(store.sceneObjects).toHaveLength(2)

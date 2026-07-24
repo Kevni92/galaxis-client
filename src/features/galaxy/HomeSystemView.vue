@@ -15,19 +15,25 @@ import { ErrorNotice } from '@/shared/ui'
 import { useHomeSystemStore } from './homeSystemStore'
 import type { SystemScene, SystemSceneFactory } from './rendering/systemScene'
 
-const props = defineProps<{
-  /** Linkrelation `galaxy` aus dem Kampagnenzustand; der Client baut die URL nicht selbst. */
-  galaxyLink: string
-  /** Optionaler Systemkontext aus dem Deep Link; er wird gegen die bekannte Galaxie geprüft. */
-  systemId?: string
-  /** Injizierbare Szenenfabrik; ohne Angabe wird die Three.js-Schicht erst zur Laufzeit geladen. */
-  sceneFactory?: SystemSceneFactory
-}>()
+const props = withDefaults(
+  defineProps<{
+    /** Linkrelation `galaxy` aus dem Kampagnenzustand; der Client baut die URL nicht selbst. */
+    galaxyLink: string
+    /** Optionaler Systemkontext aus dem Deep Link; er wird gegen die bekannte Galaxie geprüft. */
+    systemId?: string
+    /** Übergibt die URL-Synchronisation an eine übergeordnete Kampagnenshell. */
+    syncUrl?: boolean
+    /** Injizierbare Szenenfabrik; ohne Angabe wird die Three.js-Schicht erst zur Laufzeit geladen. */
+    sceneFactory?: SystemSceneFactory
+  }>(),
+  { syncUrl: true },
+)
+const emit = defineEmits<{ ready: [systemId: string] }>()
 
 const route = useRoute()
 const router = useRouter()
 const store = useHomeSystemStore()
-const { status, error, objects, sceneObjects, selectedObjectId, selectedObject } =
+const { status, error, objects, sceneObjects, selectedObjectId, selectedObject, system } =
   storeToRefs(store)
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -61,6 +67,7 @@ async function load(): Promise<void> {
   // Auswahl aus der URL erst nach dem Laden anwenden; unbekannte IDs verwirft der Store.
   const fromUrl = route.query.object
   if (typeof fromUrl === 'string') store.select(fromUrl)
+  if (status.value === 'ready' && system.value) emit('ready', system.value.systemId)
 }
 
 onMounted(load)
@@ -68,7 +75,19 @@ onMounted(load)
 watch(
   () => [props.galaxyLink, props.systemId],
   ([galaxyLink, systemId], previous) => {
-    if (previous && (galaxyLink !== previous[0] || systemId !== previous[1])) void load()
+    if (!previous || (galaxyLink === previous[0] && systemId === previous[1])) return
+    // Die Kampagnenshell ergänzt nach dem ersten Laden die kanonische System-ID. Das bereits
+    // geladene System bleibt dabei gültig; ein zweiter Request würde Auswahl und Szene unnötig
+    // zurücksetzen und könnte eine Nutzeraktion zwischen beiden Zuständen verlieren.
+    if (
+      galaxyLink === previous[0] &&
+      typeof systemId === 'string' &&
+      status.value === 'ready' &&
+      system.value?.systemId === systemId
+    ) {
+      return
+    }
+    void load()
   },
 )
 
@@ -90,6 +109,7 @@ watch(sceneObjects, (value) => scene?.setObjects(value))
 
 watch(selectedObjectId, (id) => {
   scene?.setSelection(id)
+  if (props.syncUrl === false) return
   const next = id ?? undefined
   if (route.query.object !== next) {
     void router.replace({ query: { ...route.query, object: next } })
@@ -147,6 +167,7 @@ onBeforeUnmount(() => {
               role="option"
               :aria-selected="object.id === selectedObjectId ? 'true' : 'false'"
               :data-kind="object.kind"
+              :data-homeworld-eligible="object.homeworldEligible ? 'true' : undefined"
               :data-selected="object.id === selectedObjectId ? 'true' : undefined"
               :data-testid="`object-${object.id}`"
               @click="store.select(object.id)"

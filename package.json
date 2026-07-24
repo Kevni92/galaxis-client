@@ -20,6 +20,7 @@
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:a0": "node scripts/run-e2e-a0.mjs",
+    "test:e2e:a1": "node scripts/run-e2e-a1.mjs",
     "test:e2e:install": "playwright install --with-deps chromium",
     "gen:api": "openapi-typescript docs/contracts/rest-api/galaxis-rest-v1.yaml -o src/shared/api/generated/galaxis-rest-v1.ts && openapi-typescript docs/contracts/rest-api/galaxis-rest-v1-a1.yaml -o src/shared/api/generated/galaxis-rest-v1-a1.ts"
   },

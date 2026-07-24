@@ -21,7 +21,8 @@ Serverbefehl; der Client leitet keine Kolonie, Zugehörigkeit oder Kennzahl selb
 1. Die Kampagnen-App-Shell (`features/campaign/CampaignView.vue`) lädt nach `ready` die Übersicht über
    die Linkrelation `links.colonies` aus dem Kampagnenzustand.
 2. Wählt die Systemansicht (`features/galaxy`) einen Planeten aus (Szene, Liste oder URL), setzt die
-   Shell `colonyStore.selectPlanet(planetId)`. Der Store sucht die passende Kolonie und lädt deren
+   Shell `colonyStore.selectPlanet(planetId, { homeworldEligible })`. Der Store löst die serverseitig
+   markierte Heimatkolonie auf und lädt deren
    Bevölkerung und Grundversorgung über die Kolonie-Linkrelationen.
 3. `ColonyDetailWindow` liest den Detailzustand und zeigt ihn in Tabs (Übersicht, Bevölkerung,
    Grundversorgung). Das Fenster öffnet die Shell, solange ein Planet gewählt ist.

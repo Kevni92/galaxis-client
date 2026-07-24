@@ -25,6 +25,8 @@ export interface SystemObject {
   y: number
   /** Rein präsentationaler Renderhinweis. */
   renderKind: string
+  /** Serverautoritatives Merkmal für den sichtbaren Heimatplaneten. */
+  homeworldEligible?: boolean
 }
 
 function fromStar(star: StarObject): SystemObject {
@@ -48,6 +50,7 @@ function fromPlanet(planet: PlanetObject): SystemObject {
     x: planet.localPosition.x,
     y: planet.localPosition.y,
     renderKind: planet.renderKind,
+    homeworldEligible: planet.homeworldEligible,
   }
 }
 
@@ -63,6 +66,7 @@ export const useHomeSystemStore = defineStore('homeSystem', () => {
   const status = ref<HomeSystemStatus>('idle')
   const error = ref<UiError | null>(null)
   const selectedObjectId = ref<string | null>(null)
+  const loadedGalaxyLink = ref<string | null>(null)
 
   /** Nur bekannte Sterne und Planeten des geladenen Systems, für Liste und Szene normalisiert. */
   const objects = computed<SystemObject[]>(() => {
@@ -100,9 +104,18 @@ export const useHomeSystemStore = defineStore('homeSystem', () => {
    * oder ein inkonsistenter Galaxiestand) werden ohne interne Details als UiError dargestellt.
    */
   async function loadFromGalaxy(galaxyLink: string, requestedSystemId?: string): Promise<void> {
+    if (
+      status.value === 'ready' &&
+      loadedGalaxyLink.value === galaxyLink &&
+      typeof requestedSystemId === 'string' &&
+      system.value?.systemId === requestedSystemId
+    ) {
+      return
+    }
     const client = requireApi()
     system.value = null
     selectedObjectId.value = null
+    loadedGalaxyLink.value = null
     status.value = 'loading'
     error.value = null
     try {
@@ -117,6 +130,7 @@ export const useHomeSystemStore = defineStore('homeSystem', () => {
       }
       const detail = await client.getSystem(systemLink)
       system.value = detail
+      loadedGalaxyLink.value = galaxyLink
       status.value = 'ready'
     } catch (cause) {
       error.value = toUiError(cause)

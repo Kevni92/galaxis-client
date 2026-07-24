@@ -20,6 +20,9 @@ const clientRoot = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '.
 const serverDir = path.resolve(
   process.env.GALAXIS_SERVER_DIR ?? path.join(clientRoot, '..', 'server'),
 )
+const runName = process.env.GALAXIS_E2E_NAME ?? 'a0'
+const playwrightConfig = process.env.GALAXIS_E2E_CONFIG ?? 'playwright.a0.config.ts'
+const logPrefix = `[run-e2e-${runName}]`
 
 // Unter Windows sind `pnpm`/`docker` .cmd-Shims und lassen sich nur über eine Shell starten;
 // dafür wird die gesamte Kommandozeile als ein String übergeben (kein Array neben `shell: true`),
@@ -45,13 +48,13 @@ const serverEnv = {
 }
 
 function fail(message) {
-  console.error(`[run-e2e-a0] ${message}`)
+  console.error(`${logPrefix} ${message}`)
   process.exitCode = 1
   throw new Error(message)
 }
 
 function run(parts, options) {
-  console.log(`[run-e2e-a0] $ ${parts.join(' ')} (cwd: ${options.cwd})`)
+  console.log(`${logPrefix} $ ${parts.join(' ')} (cwd: ${options.cwd})`)
   const result = spawnSync(...spawnArgs(parts, { stdio: 'inherit', ...options }))
   if (result.status !== 0) {
     fail(`Befehl fehlgeschlagen (${result.status}): ${parts.join(' ')}`)
@@ -101,19 +104,19 @@ async function main() {
     fail(`${serverDir} enthält keine docker-compose.yml – ist der Pfad korrekt?`)
   }
 
-  console.log(`[run-e2e-a0] Server-Repository: ${serverDir}`)
+  console.log(`${logPrefix} Server-Repository: ${serverDir}`)
 
-  console.log('[run-e2e-a0] Starte PostgreSQL …')
+  console.log(`${logPrefix} Starte PostgreSQL …`)
   run(['docker', 'compose', 'up', '-d', '--wait', 'postgres'], { cwd: serverDir })
 
-  console.log('[run-e2e-a0] Führe Migrationen aus …')
+  console.log(`${logPrefix} Führe Migrationen aus …`)
   run(['pnpm', 'db:migrate'], { cwd: serverDir, env: serverEnv })
 
-  await mkdir(path.join(clientRoot, 'test-results-a0'), { recursive: true })
-  const logPath = path.join(clientRoot, 'test-results-a0', 'server-a0.log')
+  await mkdir(path.join(clientRoot, `test-results-${runName}`), { recursive: true })
+  const logPath = path.join(clientRoot, `test-results-${runName}`, `server-${runName}.log`)
   const logStream = createWriteStream(logPath)
 
-  console.log(`[run-e2e-a0] Starte Server (Log: ${logPath}) …`)
+  console.log(`${logPrefix} Starte Server (Log: ${logPath}) …`)
   const serverProcess = spawn(
     ...spawnArgs(['pnpm', 'dev'], {
       cwd: serverDir,
@@ -126,7 +129,7 @@ async function main() {
   serverProcess.once('exit', (code) => {
     if (!shuttingDownServer && code !== null && code !== 0) {
       console.error(
-        `[run-e2e-a0] Serverprozess unerwartet beendet (Code ${code}), siehe ${logPath}`,
+        `${logPrefix} Serverprozess unerwartet beendet (Code ${code}), siehe ${logPath}`,
       )
     }
   })
@@ -138,10 +141,10 @@ async function main() {
       intervalMs: 300,
       describe: 'Server-Readiness',
     })
-    console.log('[run-e2e-a0] Server bereit. Starte Playwright …')
+    console.log(`${logPrefix} Server bereit. Starte Playwright …`)
 
     const playwright = spawnSync(
-      ...spawnArgs(['pnpm', 'exec', 'playwright', 'test', '-c', 'playwright.a0.config.ts'], {
+      ...spawnArgs(['pnpm', 'exec', 'playwright', 'test', '-c', playwrightConfig], {
         cwd: clientRoot,
         stdio: 'inherit',
         env: { ...process.env, GALAXIS_E2E_SERVER_URL: `http://${GALAXIS_HOST}:${GALAXIS_PORT}` },
@@ -149,7 +152,7 @@ async function main() {
     )
     playwrightExitCode = playwright.status ?? 1
   } finally {
-    console.log('[run-e2e-a0] Beende Serverprozess …')
+    console.log(`${logPrefix} Beende Serverprozess …`)
     shuttingDownServer = true
     killTree(serverProcess)
     logStream.end()
